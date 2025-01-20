@@ -43,6 +43,7 @@
   <script>
     let map, currentLocation;
     let retryCount = 0;
+    const maxRetries = 3;
 
     function initMap() {
       map = new google.maps.Map(document.getElementById('map'), {
@@ -61,7 +62,7 @@
               accuracy: position.coords.accuracy,
             });
 
-            if (position.coords.accuracy > 100) { // Ignore low-accuracy data
+            if (position.coords.accuracy > 100) {
               alert('Location accuracy is too low. Retrying...');
               retryLocation();
               return;
@@ -74,7 +75,8 @@
             };
             document.getElementById('your-location').value = `${currentLocation.lat}, ${currentLocation.lng}`;
             map.setCenter(currentLocation);
-            new google.maps.Marker({
+
+            new google.maps.marker.AdvancedMarkerElement({
               position: currentLocation,
               map: map,
               title: 'Your Live Location',
@@ -84,7 +86,7 @@
             console.error('Geolocation Error:', error);
             handleLocationError(error);
           },
-          { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
+          { enableHighAccuracy: true, timeout: 20000, maximumAge: 0 }
         );
       } else {
         alert('Geolocation is not supported by your browser.');
@@ -92,13 +94,13 @@
     }
 
     function retryLocation() {
-      if (retryCount >= 3) {
-        alert('Failed to get a high-accuracy location after 3 attempts.');
+      if (retryCount >= maxRetries) {
+        alert('Failed to get a high-accuracy location after multiple attempts.');
         return;
       }
       retryCount++;
-      console.warn(`Retrying (${retryCount}/3)...`);
-      getCurrentLocation();
+      console.warn(`Retrying (${retryCount}/${maxRetries})...`);
+      setTimeout(() => getCurrentLocation(), 2000); // Retry after 2 seconds
     }
 
     function handleLocationError(error) {
