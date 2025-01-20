@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Enhanced Google Maps with Stable GPS Location</title>
+  <title>Enhanced Google Maps with Accurate Location</title>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -33,7 +33,7 @@
   </style>
 </head>
 <body>
-  <h1>Enhanced Google Maps with Stable GPS Location</h1>
+  <h1>Enhanced Google Maps with Accurate Location</h1>
   <div>
     <input id="your-location" placeholder="Your location" readonly>
     <button onclick="getCurrentLocation()">Get Live Location</button>
@@ -42,6 +42,7 @@
 
   <script>
     let map, currentLocation;
+    let retryCount = 0;
 
     function initMap() {
       map = new google.maps.Map(document.getElementById('map'), {
@@ -60,12 +61,13 @@
               accuracy: position.coords.accuracy,
             });
 
-            // Check if accuracy is acceptable
-            if (position.coords.accuracy > 50) {
-              alert('Location accuracy is too low. Please try again.');
+            if (position.coords.accuracy > 100) { // Ignore low-accuracy data
+              alert('Location accuracy is too low. Retrying...');
+              retryLocation();
               return;
             }
 
+            retryCount = 0; // Reset retry counter on success
             currentLocation = {
               lat: position.coords.latitude,
               lng: position.coords.longitude,
@@ -82,11 +84,21 @@
             console.error('Geolocation Error:', error);
             handleLocationError(error);
           },
-          { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 } // Force fresh GPS data
+          { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
         );
       } else {
         alert('Geolocation is not supported by your browser.');
       }
+    }
+
+    function retryLocation() {
+      if (retryCount >= 3) {
+        alert('Failed to get a high-accuracy location after 3 attempts.');
+        return;
+      }
+      retryCount++;
+      console.warn(`Retrying (${retryCount}/3)...`);
+      getCurrentLocation();
     }
 
     function handleLocationError(error) {
@@ -98,7 +110,7 @@
           alert('Location information is unavailable.');
           break;
         case error.TIMEOUT:
-          alert('The request to get user location timed out.');
+          alert('The request to get user location timed out. Please try again.');
           break;
         default:
           alert('An unknown error occurred.');
