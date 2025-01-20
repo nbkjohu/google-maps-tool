@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Enhanced Google Maps with Browser Geolocation</title>
+  <title>Enhanced Google Maps with Live GPS Location</title>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -57,11 +57,11 @@
   </style>
 </head>
 <body>
-  <h1>Enhanced Google Maps with Browser Geolocation</h1>
+  <h1>Enhanced Google Maps with Live GPS Location</h1>
 
   <div>
     <input id="your-location" placeholder="Your location" readonly>
-    <button onclick="getCurrentLocation()">Get Current Location</button>
+    <button onclick="getCurrentLocation()">Get Live Location</button>
     <br><br>
     <input id="destination" placeholder="Destination">
     <select id="mode">
@@ -71,21 +71,14 @@
       <option value="TRANSIT">Transit</option>
     </select>
     <button onclick="getDirections()">Search</button>
-    <button onclick="findNearbyPlaces()">Find Nearby Places</button>
-    <button onclick="toggleTraffic()">Toggle Traffic</button>
-    <button onclick="saveFavorite()">Save Location</button>
   </div>
-
-  <h3>Favorite Locations</h3>
-  <ul id="favorites"></ul>
 
   <div id="map"></div>
   <div id="info"></div>
   <div id="weather"></div>
 
   <script>
-    let map, directionsService, directionsRenderer, currentLocation, autocomplete, trafficLayer;
-    const favoriteLocations = [];
+    let map, directionsService, directionsRenderer, currentLocation;
 
     function initMap() {
       directionsService = new google.maps.DirectionsService();
@@ -95,11 +88,6 @@
         zoom: 12,
       });
       directionsRenderer.setMap(map);
-
-      trafficLayer = new google.maps.TrafficLayer();
-
-      // Autocomplete for destination input
-      autocomplete = new google.maps.places.Autocomplete(document.getElementById('destination'));
     }
 
     function getCurrentLocation() {
@@ -118,15 +106,33 @@
               title: 'Your Location',
             });
 
-            // Fetch weather info
+            // Fetch weather info for the live location
             getWeather(currentLocation.lat, currentLocation.lng);
           },
-          () => {
-            alert('Failed to fetch your location. Please enable location services in your browser.');
-          }
+          (error) => {
+            handleLocationError(error);
+          },
+          { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
         );
       } else {
         alert('Geolocation is not supported by your browser.');
+      }
+    }
+
+    function handleLocationError(error) {
+      switch (error.code) {
+        case error.PERMISSION_DENIED:
+          alert('Location access denied by user. Please enable location services.');
+          break;
+        case error.POSITION_UNAVAILABLE:
+          alert('Location information is unavailable.');
+          break;
+        case error.TIMEOUT:
+          alert('The request to get user location timed out.');
+          break;
+        default:
+          alert('An unknown error occurred.');
+          break;
       }
     }
 
@@ -175,67 +181,8 @@
         }
       });
     }
-
-    function findNearbyPlaces() {
-      const service = new google.maps.places.PlacesService(map);
-
-      service.nearbySearch(
-        {
-          location: currentLocation,
-          radius: 2000, // 2 km radius
-          type: ['restaurant'], // Change this to 'atm', 'cafe', etc.
-        },
-        (results, status) => {
-          if (status === google.maps.places.PlacesServiceStatus.OK) {
-            for (let i = 0; i < results.length; i++) {
-              createMarker(results[i]);
-            }
-          } else {
-            alert('Error fetching nearby places: ' + status);
-          }
-        }
-      );
-    }
-
-    function toggleTraffic() {
-      trafficLayer.setMap(trafficLayer.getMap() ? null : map);
-    }
-
-    function createMarker(place) {
-      const marker = new google.maps.Marker({
-        map,
-        position: place.geometry.location,
-        title: place.name,
-      });
-
-      const infoWindow = new google.maps.InfoWindow({
-        content: `<div><strong>${place.name}</strong><br>${place.vicinity}</div>`,
-      });
-
-      marker.addListener('click', () => {
-        infoWindow.open(map, marker);
-      });
-    }
-
-    function saveFavorite() {
-      const locationName = prompt('Enter a name for this location:');
-      if (locationName) {
-        favoriteLocations.push({ name: locationName, location: currentLocation });
-        updateFavoritesList();
-      }
-    }
-
-    function updateFavoritesList() {
-      const favoritesList = document.getElementById('favorites');
-      favoritesList.innerHTML = '';
-      favoriteLocations.forEach((fav) => {
-        const listItem = document.createElement('li');
-        listItem.textContent = `${fav.name} (${fav.location.lat}, ${fav.location.lng})`;
-        favoritesList.appendChild(listItem);
-      });
-    }
   </script>
 
-  <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCp2c5_T9vlA4a0bc1ANq-0sA13t86T024&libraries=places&callback=initMap" async defer></script>
+  <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCp2c5_T9vlA4a0bc1ANq-0sA13t86T024&callback=initMap" async defer></script>
 </body>
 </html>
