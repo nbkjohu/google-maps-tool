@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Enhanced Google Maps with IP Geolocation</title>
+  <script>
+    const ipstackKey = "072bdca1cf5f714e98532e9af37806f4
+"; // Replace with your ipstack API key
+
+    // Fetch location based on IP address
+    function fetchIpLocation() {
+      fetch(`https://api.ipstack.com/check?access_key=${ipstackKey}`)
+        .then((response) => response.json())
+        .then((data) => {
+          if (data.latitude && data.longitude) {
+            document.getElementById("origin").value = `${data.latitude},${data.longitude}`;
+          } else {
+            alert("Failed to fetch location from IP. Please enter manually.");
+          }
+        })
+        .catch((error) => {
+          console.error("IP-based geolocation error:", error);
+          alert("Error fetching location from IP. Please enter manually.");
+        });
+    }
+
+    // Update Google Maps iframe based on user input
+    function updateMap() {
+      const origin = document.getElementById("origin").value;
+      const destination = document.getElementById("destination").value;
+      const mode = document.getElementById("mode").value;
+
+      if (origin && destination) {
+        const mapIframe = document.getElementById("mapIframe");
+        mapIframe.src = `https://www.google.com/maps/embed/v1/directions?key=072bdca1cf5f714e98532e9af37806f4
+&origin=${encodeURIComponent(
+          origin
+        )}&destination=${encodeURIComponent(destination)}&mode=${mode}`;
+      } else {
+        alert("Please fill both the origin and destination fields.");
+      }
+    }
+  </script>
+</head>
+<body>
+  <h1>Enhanced Google Maps with IP Geolocation</h1>
+  <div>
+    <label for="origin">Your location:</label>
+    <input type="text" id="origin" placeholder="Your location">
+    <button onclick="fetchIpLocation()">Get Location via IP</button>
+  </div>
+  <div>
+    <label for="destination">Destination:</label>
+    <input type="text" id="destination" placeholder="Destination">
+  </div>
+  <div>
+    <label for="mode">Mode:</label>
+    <select id="mode">
+      <option value="driving">Driving</option>
+      <option value="walking">Walking</option>
+      <option value="bicycling">Bicycling</option>
+      <option value="transit">Transit</option>
+    </select>
+  </div>
+  <button onclick="updateMap()">Search</button>
+  <iframe id="mapIframe" width="100%" height="500" style="border:0;" allowfullscreen></iframe>
+</body>
+</html>
