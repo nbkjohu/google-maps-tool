@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Enhanced Google Maps with Accurate GPS Location</title>
+  <title>Enhanced Google Maps with Stable GPS Location</title>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -33,7 +33,7 @@
   </style>
 </head>
 <body>
-  <h1>Enhanced Google Maps with Accurate GPS Location</h1>
+  <h1>Enhanced Google Maps with Stable GPS Location</h1>
   <div>
     <input id="your-location" placeholder="Your location" readonly>
     <button onclick="getCurrentLocation()">Get Live Location</button>
@@ -54,12 +54,22 @@
       if (navigator.geolocation) {
         navigator.geolocation.getCurrentPosition(
           (position) => {
+            console.log('Live Location Data:', {
+              latitude: position.coords.latitude,
+              longitude: position.coords.longitude,
+              accuracy: position.coords.accuracy,
+            });
+
+            // Check if accuracy is acceptable
+            if (position.coords.accuracy > 50) {
+              alert('Location accuracy is too low. Please try again.');
+              return;
+            }
+
             currentLocation = {
               lat: position.coords.latitude,
               lng: position.coords.longitude,
             };
-            console.log('Live Location:', currentLocation);
-            console.log('Location Accuracy:', position.coords.accuracy, 'meters');
             document.getElementById('your-location').value = `${currentLocation.lat}, ${currentLocation.lng}`;
             map.setCenter(currentLocation);
             new google.maps.Marker({
@@ -69,13 +79,30 @@
             });
           },
           (error) => {
-            console.error('Error fetching live location:', error);
-            alert('Failed to fetch live location. Please check your settings.');
+            console.error('Geolocation Error:', error);
+            handleLocationError(error);
           },
-          { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
+          { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 } // Force fresh GPS data
         );
       } else {
         alert('Geolocation is not supported by your browser.');
+      }
+    }
+
+    function handleLocationError(error) {
+      switch (error.code) {
+        case error.PERMISSION_DENIED:
+          alert('Location access denied by user. Please enable location services.');
+          break;
+        case error.POSITION_UNAVAILABLE:
+          alert('Location information is unavailable.');
+          break;
+        case error.TIMEOUT:
+          alert('The request to get user location timed out.');
+          break;
+        default:
+          alert('An unknown error occurred.');
+          break;
       }
     }
   </script>
