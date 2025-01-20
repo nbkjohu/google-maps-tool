@@ -93,16 +93,19 @@
       }
     }
 
-    function updateLocation(lat, lng, source) {
+      function updateLocation(lat, lng, source) {
       currentLocation = { lat, lng };
       document.getElementById("location").value = `${lat}, ${lng} (${source})`;
       map.setCenter(currentLocation);
-      new google.maps.Marker({
-        position: currentLocation,
+    
+      // Use AdvancedMarkerElement instead of Marker
+      const marker = new google.maps.marker.AdvancedMarkerElement({
         map: map,
+        position: currentLocation,
         title: source,
       });
     }
+
   </script>
   <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCp2c5_T9vlA4a0bc1ANq-0sA13t86T024&callback=initMap" async defer></script>
 </body>
