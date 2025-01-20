@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Enhanced Google Maps with IP Geolocation</title>
+  <title>Enhanced Google Maps with Browser Geolocation</title>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -45,11 +45,11 @@
   </style>
 </head>
 <body>
-  <h1>Enhanced Google Maps with IP Geolocation</h1>
+  <h1>Enhanced Google Maps with Browser Geolocation</h1>
 
   <div>
     <input id="your-location" placeholder="Your location" readonly>
-    <button onclick="getCurrentLocation()">Get Location via IP</button>
+    <button onclick="getCurrentLocation()">Get Current Location</button>
     <br><br>
     <input id="destination" placeholder="Destination">
     <select id="mode">
@@ -83,21 +83,28 @@
     }
 
     function getCurrentLocation() {
-      fetch('https://ipapi.co/json/')
-        .then(response => response.json())
-        .then(data => {
-          currentLocation = { lat: parseFloat(data.latitude), lng: parseFloat(data.longitude) };
-          document.getElementById('your-location').value = `${data.latitude}, ${data.longitude}`;
-          map.setCenter(currentLocation);
-          new google.maps.Marker({
-            position: currentLocation,
-            map: map,
-            title: 'Your Location',
-          });
-        })
-        .catch(() => {
-          alert('Failed to get your location!');
-        });
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+          (position) => {
+            currentLocation = {
+              lat: position.coords.latitude,
+              lng: position.coords.longitude,
+            };
+            document.getElementById('your-location').value = `${currentLocation.lat}, ${currentLocation.lng}`;
+            map.setCenter(currentLocation);
+            new google.maps.Marker({
+              position: currentLocation,
+              map: map,
+              title: 'Your Location',
+            });
+          },
+          () => {
+            alert('Failed to fetch your location. Please enable location services in your browser.');
+          }
+        );
+      } else {
+        alert('Geolocation is not supported by your browser.');
+      }
     }
 
     function getDirections() {
