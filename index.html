@@ -1,97 +1,91 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Enhanced Google Maps with IP Geolocation</title>
-    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCp2c5_T9vlA4a0bc1ANq-0sA13t86T024&libraries=places"></script>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            text-align: center;
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Enhanced Google Maps with Geolocation</title>
+  <script>
+    let map;
+    let directionsService;
+    let directionsRenderer;
+
+    function initMap() {
+      map = new google.maps.Map(document.getElementById("map"), {
+        center: { lat: 28.6139, lng: 77.209 },
+        zoom: 10,
+      });
+      directionsService = new google.maps.DirectionsService();
+      directionsRenderer = new google.maps.DirectionsRenderer();
+      directionsRenderer.setMap(map);
+    }
+
+    function getLiveLocation() {
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+          (position) => {
+            const lat = position.coords.latitude;
+            const lng = position.coords.longitude;
+            document.getElementById("from-location").value = `${lat}, ${lng}`;
+            map.setCenter({ lat, lng });
+          },
+          () => {
+            alert("Failed to get your live location. Please enable location permissions.");
+          }
+        );
+      } else {
+        alert("Geolocation is not supported by your browser.");
+      }
+    }
+
+    function getDirections() {
+      const from = document.getElementById("from-location").value;
+      const to = document.getElementById("to-location").value;
+      const mode = document.getElementById("mode").value;
+
+      if (!from || !to) {
+        alert("Please provide both origin and destination.");
+        return;
+      }
+
+      directionsService.route(
+        {
+          origin: from,
+          destination: to,
+          travelMode: mode.toUpperCase(),
+        },
+        (response, status) => {
+          if (status === "OK") {
+            directionsRenderer.setDirections(response);
+          } else {
+            alert("Failed to fetch directions: " + status);
+          }
         }
-        #map {
-            width: 100%;
-            height: 500px;
-            margin-top: 20px;
-        }
-        .input-container {
-            margin: 20px;
-        }
-    </style>
+      );
+    }
+  </script>
 </head>
 <body>
-    <h1>Enhanced Google Maps with IP Geolocation</h1>
-    <div class="input-container">
-        <input type="text" id="yourLocation" placeholder="Your location">
-        <button onclick="getCurrentLocation()">Get Location via IP</button>
-        <input type="text" id="destination" placeholder="Destination">
-        <select id="mode">
-            <option value="DRIVING">Driving</option>
-            <option value="WALKING">Walking</option>
-            <option value="BICYCLING">Bicycling</option>
-            <option value="TRANSIT">Transit</option>
-        </select>
-        <button onclick="calculateRoute()">Search</button>
-    </div>
-    <div id="map"></div>
-
-    <script>
-        let map, directionsService, directionsRenderer;
-
-        function initMap() {
-            map = new google.maps.Map(document.getElementById("map"), {
-                center: { lat: 28.6139, lng: 77.209 },
-                zoom: 12,
-            });
-            directionsService = new google.maps.DirectionsService();
-            directionsRenderer = new google.maps.DirectionsRenderer();
-            directionsRenderer.setMap(map);
-        }
-
-        function getCurrentLocation() {
-            if (navigator.geolocation) {
-                navigator.geolocation.getCurrentPosition(
-                    (position) => {
-                        const lat = position.coords.latitude;
-                        const lng = position.coords.longitude;
-                        document.getElementById("yourLocation").value = `${lat}, ${lng}`;
-                    },
-                    () => {
-                        alert("Failed to get your location!");
-                    }
-                );
-            } else {
-                alert("Geolocation is not supported by this browser.");
-            }
-        }
-
-        function calculateRoute() {
-            const origin = document.getElementById("yourLocation").value;
-            const destination = document.getElementById("destination").value;
-            const mode = document.getElementById("mode").value;
-
-            if (!origin || !destination) {
-                alert("Please enter both origin and destination.");
-                return;
-            }
-
-            const request = {
-                origin: origin,
-                destination: destination,
-                travelMode: google.maps.TravelMode[mode],
-            };
-
-            directionsService.route(request, (result, status) => {
-                if (status === "OK") {
-                    directionsRenderer.setDirections(result);
-                } else {
-                    alert("Directions request failed due to " + status);
-                }
-            });
-        }
-
-        window.onload = initMap;
-    </script>
+  <h1>Enhanced Google Maps with Geolocation</h1>
+  <div>
+    <label for="from-location">Your location:</label>
+    <input type="text" id="from-location" placeholder="Your location">
+    <button onclick="getLiveLocation()">Get Live Location</button>
+    <br><br>
+    <label for="to-location">Destination:</label>
+    <input type="text" id="to-location" placeholder="Destination">
+    <br><br>
+    <label for="mode">Mode:</label>
+    <select id="mode">
+      <option value="DRIVING">Driving</option>
+      <option value="WALKING">Walking</option>
+      <option value="BICYCLING">Bicycling</option>
+      <option value="TRANSIT">Transit</option>
+    </select>
+    <button onclick="getDirections()">Get Directions</button>
+  </div>
+  <div id="map" style="height: 500px; width: 100%;"></div>
+  <script async
+    src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCp2c5_T9vlA4a0bc1ANq-0sA13t86T024&callback=initMap">
+  </script>
 </body>
 </html>
