@@ -3,70 +3,101 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Enhanced Google Maps with Geolocation</title>
-  <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCp2c5_T9vlA4a0bc1ANq-0sA13t86T024&callback=initMap" async defer></script>
+  <title>Enhanced Google Maps with IP Geolocation</title>
   <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 20px;
+      text-align: center;
+    }
+
     #map {
       height: 500px;
       width: 100%;
+      margin: 20px 0;
     }
-    body {
-      font-family: Arial, sans-serif;
-      margin: 20px;
+
+    button {
+      background-color: #4CAF50;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      margin: 5px;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background-color: #45a049;
+    }
+
+    ul {
+      list-style: none;
+      padding: 0;
+    }
+
+    ul li {
+      margin: 5px 0;
+      padding: 10px;
+      background: #f4f4f4;
+      border: 1px solid #ddd;
     }
   </style>
 </head>
 <body>
-  <h1>Enhanced Google Maps with Geolocation</h1>
+  <h1>Enhanced Google Maps with IP Geolocation</h1>
+
   <div>
-    <label for="destination">Destination: </label>
-    <input type="text" id="destination" placeholder="Enter destination">
-    <label for="mode">Mode: </label>
+    <input id="your-location" placeholder="Your location" readonly>
+    <button onclick="getCurrentLocation()">Get Location via IP</button>
+    <br><br>
+    <input id="destination" placeholder="Destination">
     <select id="mode">
       <option value="DRIVING">Driving</option>
       <option value="WALKING">Walking</option>
       <option value="BICYCLING">Bicycling</option>
       <option value="TRANSIT">Transit</option>
     </select>
-    <button onclick="getDirections()">Get Directions</button>
+    <button onclick="getDirections()">Search</button>
+    <button onclick="findNearbyPlaces()">Find Nearby Places</button>
+    <button onclick="saveFavorite()">Save Location</button>
   </div>
+
+  <h3>Favorite Locations</h3>
+  <ul id="favorites"></ul>
+
   <div id="map"></div>
 
   <script>
     let map, directionsService, directionsRenderer, currentLocation;
+    const favoriteLocations = [];
 
     function initMap() {
       directionsService = new google.maps.DirectionsService();
       directionsRenderer = new google.maps.DirectionsRenderer();
       map = new google.maps.Map(document.getElementById('map'), {
-        zoom: 14,
-        center: { lat: 28.6139, lng: 77.2090 }, // Default to New Delhi
+        center: { lat: 28.6139, lng: 77.209 },
+        zoom: 12,
       });
       directionsRenderer.setMap(map);
-
-      // Try to get the user's precise location
-      getCurrentLocation();
     }
 
     function getCurrentLocation() {
-      if (navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(
-          (position) => {
-            currentLocation = {
-              lat: position.coords.latitude,
-              lng: position.coords.longitude,
-            };
-            map.setCenter(currentLocation);
-          },
-          () => {
-            alert('Geolocation failed or permission denied. Using default location.');
-            currentLocation = { lat: 28.6139, lng: 77.2090 }; // Default to New Delhi
-          }
-        );
-      } else {
-        alert('Geolocation is not supported by this browser. Using default location.');
-        currentLocation = { lat: 28.6139, lng: 77.2090 }; // Default to New Delhi
-      }
+      fetch('https://ipapi.co/json/')
+        .then(response => response.json())
+        .then(data => {
+          currentLocation = { lat: parseFloat(data.latitude), lng: parseFloat(data.longitude) };
+          document.getElementById('your-location').value = `${data.latitude}, ${data.longitude}`;
+          map.setCenter(currentLocation);
+          new google.maps.Marker({
+            position: currentLocation,
+            map: map,
+            title: 'Your Location',
+          });
+        })
+        .catch(() => {
+          alert('Failed to get your location!');
+        });
     }
 
     function getDirections() {
@@ -87,11 +118,72 @@
       directionsService.route(request, (result, status) => {
         if (status === 'OK') {
           directionsRenderer.setDirections(result);
+
+          // Display distance and duration
+          const route = result.routes[0].legs[0];
+          alert(`Distance: ${route.distance.text}, Duration: ${route.duration.text}`);
         } else {
           alert('Could not get directions: ' + status);
         }
       });
     }
+
+    function findNearbyPlaces() {
+      const service = new google.maps.places.PlacesService(map);
+
+      service.nearbySearch(
+        {
+          location: currentLocation,
+          radius: 2000, // 2 km radius
+          type: ['restaurant'], // Change this to 'atm', 'cafe', etc.
+        },
+        (results, status) => {
+          if (status === google.maps.places.PlacesServiceStatus.OK) {
+            for (let i = 0; i < results.length; i++) {
+              createMarker(results[i]);
+            }
+          } else {
+            alert('Error fetching nearby places: ' + status);
+          }
+        }
+      );
+    }
+
+    function createMarker(place) {
+      const marker = new google.maps.Marker({
+        map,
+        position: place.geometry.location,
+        title: place.name,
+      });
+
+      const infoWindow = new google.maps.InfoWindow({
+        content: `<div><strong>${place.name}</strong><br>${place.vicinity}</div>`,
+      });
+
+      marker.addListener('click', () => {
+        infoWindow.open(map, marker);
+      });
+    }
+
+    function saveFavorite() {
+      const locationName = prompt('Enter a name for this location:');
+      if (locationName) {
+        favoriteLocations.push({ name: locationName, location: currentLocation });
+        updateFavoritesList();
+      }
+    }
+
+    function updateFavoritesList() {
+      const favoritesList = document.getElementById('favorites');
+      favoritesList.innerHTML = '';
+      favoriteLocations.forEach((fav, index) => {
+        const listItem = document.createElement('li');
+        listItem.textContent = `${fav.name} (${fav.location.lat}, ${fav.location.lng})`;
+        favoritesList.appendChild(listItem);
+      });
+    }
   </script>
+
+  <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCp2c5_T9vlA4a0bc1ANq-0sA13t86T024&libraries=places&callback=initMap" async defer></script>
 </body>
 </html>
