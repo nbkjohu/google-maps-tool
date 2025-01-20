@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Enhanced Google Maps with Live GPS Location</title>
+  <title>Enhanced Google Maps with Accurate GPS Location</title>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -33,11 +33,10 @@
   </style>
 </head>
 <body>
-  <h1>Enhanced Google Maps with Live GPS Location</h1>
+  <h1>Enhanced Google Maps with Accurate GPS Location</h1>
   <div>
     <input id="your-location" placeholder="Your location" readonly>
     <button onclick="getCurrentLocation()">Get Live Location</button>
-    <button onclick="promptForLocation()">Enter Location Manually</button>
   </div>
   <div id="map"></div>
 
@@ -55,15 +54,12 @@
       if (navigator.geolocation) {
         navigator.geolocation.getCurrentPosition(
           (position) => {
-            console.log('Live Location Coordinates:', {
-              latitude: position.coords.latitude,
-              longitude: position.coords.longitude,
-              accuracy: position.coords.accuracy,
-            });
             currentLocation = {
               lat: position.coords.latitude,
               lng: position.coords.longitude,
             };
+            console.log('Live Location:', currentLocation);
+            console.log('Location Accuracy:', position.coords.accuracy, 'meters');
             document.getElementById('your-location').value = `${currentLocation.lat}, ${currentLocation.lng}`;
             map.setCenter(currentLocation);
             new google.maps.Marker({
@@ -73,28 +69,13 @@
             });
           },
           (error) => {
-            console.error('Geolocation Error:', error);
-            alert('Failed to fetch live location. Check permissions or GPS settings.');
+            console.error('Error fetching live location:', error);
+            alert('Failed to fetch live location. Please check your settings.');
           },
           { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
         );
       } else {
         alert('Geolocation is not supported by your browser.');
-      }
-    }
-
-    function promptForLocation() {
-      const lat = prompt('Enter Latitude:');
-      const lng = prompt('Enter Longitude:');
-      if (lat && lng) {
-        currentLocation = { lat: parseFloat(lat), lng: parseFloat(lng) };
-        document.getElementById('your-location').value = `${lat}, ${lng}`;
-        map.setCenter(currentLocation);
-        new google.maps.Marker({
-          position: currentLocation,
-          map: map,
-          title: 'Custom Location',
-        });
       }
     }
   </script>
