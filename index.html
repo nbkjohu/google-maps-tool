@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Google Maps with Enhanced Features</title>
+  <title>Offers Near You</title>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -72,7 +72,7 @@
       width: 100%;
     }
 
-    .places-list {
+    .offers-list {
       margin: 20px auto;
       width: 90%;
       max-width: 800px;
@@ -83,7 +83,7 @@
       text-align: left;
     }
 
-    .places-list h3 {
+    .offers-list h3 {
       margin-top: 0;
     }
 
@@ -113,45 +113,41 @@
 </head>
 <body>
   <header>
-    <h1>Google Maps with Enhanced Features</h1>
+    <h1>Offers Near You</h1>
   </header>
 
   <div id="controls">
-    <input id="your-location" placeholder="Your location" readonly>
     <button onclick="getCurrentLocation()">Get Live Location</button>
-
-    <select id="place-category">
-      <option value="restaurant">Restaurant</option>
-      <option value="cafe">Cafe</option>
-      <option value="gas_station">Gas Station</option>
-      <option value="park">Park</option>
-    </select>
-    <button onclick="findNearbyPlaces()">Find Nearby Places</button>
   </div>
 
   <div id="map-container">
     <div id="map"></div>
   </div>
 
-  <div class="places-list">
-    <h3>Nearby Shops and Offers</h3>
-    <ul id="places-list"></ul>
+  <div class="offers-list">
+    <h3>Nearby Offers</h3>
+    <ul id="offers-list"></ul>
   </div>
 
   <footer>
-    &copy; 2025 Google Maps Advanced Tool. All Rights Reserved.
+    &copy; 2025 Offers App. All Rights Reserved.
   </footer>
 
   <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCp2c5_T9vlA4a0bc1ANq-0sA13t86T024&libraries=places&callback=initMap" async defer></script>
   <script>
-    let map, currentLocation, placesService, markers = [];
+    let map, currentLocation, markers = [];
+    const shopData = [
+      { name: "Restaurant A", category: "restaurant", latitude: 28.6139, longitude: 77.209, offer: "10% off on meals" },
+      { name: "Cafe B", category: "cafe", latitude: 28.6145, longitude: 77.210, offer: "Free coffee with snacks" },
+      { name: "Gas Station C", category: "gas_station", latitude: 28.6150, longitude: 77.211, offer: "5% cashback on fuel" },
+      { name: "Park D", category: "park", latitude: 28.6125, longitude: 77.208, offer: "Free entry on weekends" },
+    ];
 
     function initMap() {
       map = new google.maps.Map(document.getElementById("map"), {
         center: { lat: 28.6139, lng: 77.209 },
-        zoom: 12,
+        zoom: 15,
       });
-      placesService = new google.maps.places.PlacesService(map);
     }
 
     function getCurrentLocation() {
@@ -162,72 +158,70 @@
               lat: position.coords.latitude,
               lng: position.coords.longitude,
             };
-            document.getElementById("your-location").value = `${currentLocation.lat}, ${currentLocation.lng}`;
             map.setCenter(currentLocation);
             addMarker(currentLocation, "Your Location");
+            findNearbyOffers();
           },
           (error) => {
-            alert("Failed to fetch location. Please enable location services and try again.");
+            alert("Failed to fetch location. Please enable location services.");
             console.error("Geolocation Error:", error.message);
           },
-          { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
+          { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
         );
       } else {
         alert("Geolocation is not supported by your browser.");
       }
     }
 
-    function findNearbyPlaces() {
-      const category = document.getElementById("place-category").value;
+    function findNearbyOffers() {
+      const radius = 2; // Radius in km
+      const offersList = document.getElementById("offers-list");
+      offersList.innerHTML = "";
 
-      if (!currentLocation) {
-        alert("Please fetch your location first.");
-        return;
-      }
+      shopData.forEach((shop) => {
+        const distance = calculateDistance(
+          currentLocation.lat,
+          currentLocation.lng,
+          shop.latitude,
+          shop.longitude
+        );
 
-      clearMarkers();
-
-      placesService.nearbySearch(
-        {
-          location: currentLocation,
-          radius: 2000,
-          type: [category],
-        },
-        (results, status) => {
-          if (status === google.maps.places.PlacesServiceStatus.OK) {
-            updatePlacesList(results);
-            results.forEach((place) => {
-              addMarker(place.geometry.location, place.name);
-            });
-          } else {
-            alert("No places found for the selected category.");
-          }
+        if (distance <= radius) {
+          addMarkerWithInfo({ lat: shop.latitude, lng: shop.longitude }, shop.name, shop.offer);
+          const listItem = document.createElement("li");
+          listItem.textContent = `${shop.name} - ${shop.offer}`;
+          offersList.appendChild(listItem);
         }
-      );
+      });
     }
 
-    function addMarker(location, title) {
+    function addMarkerWithInfo(location, title, offer) {
       const marker = new google.maps.Marker({
         position: location,
         map,
         title,
       });
       markers.push(marker);
-    }
 
-    function clearMarkers() {
-      markers.forEach((marker) => marker.setMap(null));
-      markers = [];
-    }
-
-    function updatePlacesList(places) {
-      const placesList = document.getElementById("places-list");
-      placesList.innerHTML = "";
-      places.forEach((place) => {
-        const listItem = document.createElement("li");
-        listItem.textContent = `${place.name} - ${place.vicinity}`;
-        placesList.appendChild(listItem);
+      const infoWindow = new google.maps.InfoWindow({
+        content: `<strong>${title}</strong><br>${offer}`,
       });
+
+      marker.addListener("click", () => {
+        infoWindow.open(map, marker);
+      });
+    }
+
+    function calculateDistance(lat1, lng1, lat2, lng2) {
+      const R = 6371; // Earth's radius in km
+      const dLat = (lat2 - lat1) * (Math.PI / 180);
+      const dLng = (lng2 - lng1) * (Math.PI / 180);
+      const a =
+        Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+        Math.cos(lat1 * (Math.PI / 180)) * Math.cos(lat2 * (Math.PI / 180)) *
+        Math.sin(dLng / 2) * Math.sin(dLng / 2);
+      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+      return R * c;
     }
   </script>
 </body>
