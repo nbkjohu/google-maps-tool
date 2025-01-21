@@ -8,104 +8,187 @@
     body {
       font-family: Arial, sans-serif;
       margin: 0;
-      padding: 20px;
+      padding: 0;
       text-align: center;
+      background-color: #f9f9f9;
     }
-    #map {
-      height: 500px;
+
+    header {
+      background-color: #4CAF50;
+      color: white;
+      padding: 20px 0;
+      margin-bottom: 20px;
+    }
+
+    header h1 {
+      margin: 0;
+      font-size: 24px;
+    }
+
+    #controls {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 10px;
+      padding: 10px;
+      background-color: white;
+      border: 1px solid #ddd;
+      border-radius: 10px;
+      margin: 20px auto;
+      width: 90%;
+      max-width: 800px;
+    }
+
+    #controls div {
+      flex: 1 1 250px;
+      min-width: 200px;
+    }
+
+    input, select, button {
       width: 100%;
-      margin: 20px 0;
+      padding: 10px;
+      margin-bottom: 10px;
+      border: 1px solid #ddd;
+      border-radius: 5px;
+      box-sizing: border-box;
     }
+
     button {
       background-color: #4CAF50;
       color: white;
-      border: none;
-      padding: 10px 20px;
-      margin: 5px;
       cursor: pointer;
+      font-weight: bold;
     }
+
     button:hover {
       background-color: #45a049;
     }
-    select, input {
-      padding: 10px;
-      margin: 5px;
+
+    #map-container {
+      margin: 20px auto;
+      width: 90%;
+      max-width: 1000px;
+      border: 2px solid #ddd;
+      border-radius: 10px;
+      overflow: hidden;
     }
+
+    #map {
+      height: 500px;
+      width: 100%;
+    }
+
+    .favorites {
+      margin: 20px auto;
+      width: 90%;
+      max-width: 800px;
+      background-color: white;
+      padding: 20px;
+      border: 1px solid #ddd;
+      border-radius: 10px;
+      text-align: left;
+    }
+
+    .favorites h3 {
+      margin-top: 0;
+    }
+
     ul {
       list-style: none;
       padding: 0;
+      margin: 0;
     }
+
     ul li {
-      margin: 5px 0;
       padding: 10px;
       background: #f4f4f4;
       border: 1px solid #ddd;
-      cursor: pointer;
+      margin: 5px 0;
+      border-radius: 5px;
+    }
+
+    footer {
+      text-align: center;
+      padding: 10px;
+      background-color: #4CAF50;
+      color: white;
+      position: relative;
+      bottom: 0;
+      width: 100%;
     }
   </style>
 </head>
 <body>
-  <h1>Google Maps with Advanced Features</h1>
+  <header>
+    <h1>Google Maps with Advanced Features</h1>
+  </header>
 
-  <div>
-    <input id="your-location" placeholder="Your location">
-    <button onclick="getCurrentLocation()">Get Live Location</button>
-    <br><br>
-    <input id="destination" placeholder="Destination">
-    <select id="mode">
-      <option value="DRIVING">Driving</option>
-      <option value="WALKING">Walking</option>
-      <option value="BICYCLING">Bicycling</option>
-      <option value="TRANSIT">Transit</option>
-    </select>
-    <button onclick="getDirections()">Get Directions</button>
+  <div id="controls">
+    <div>
+      <input id="your-location" placeholder="Your location">
+      <button onclick="getCurrentLocation()">Get Live Location</button>
+    </div>
+    <div>
+      <input id="destination" placeholder="Destination">
+      <select id="mode">
+        <option value="DRIVING">Driving</option>
+        <option value="WALKING">Walking</option>
+        <option value="BICYCLING">Bicycling</option>
+        <option value="TRANSIT">Transit</option>
+      </select>
+      <button onclick="getDirections()">Get Directions</button>
+    </div>
+    <div>
+      <select id="place-category">
+        <option value="restaurant">Restaurant</option>
+        <option value="cafe">Cafe</option>
+        <option value="gas_station">Gas Station</option>
+        <option value="park">Park</option>
+      </select>
+      <button onclick="findNearbyPlaces()">Find Nearby Places</button>
+    </div>
+    <div>
+      <button onclick="toggleTrafficLayer()">Toggle Traffic Layer</button>
+      <select id="map-style" onchange="changeMapStyle()">
+        <option value="default">Default</option>
+        <option value="satellite">Satellite</option>
+        <option value="terrain">Terrain</option>
+        <option value="dark">Dark Mode</option>
+      </select>
+    </div>
+    <div>
+      <button onclick="shareCurrentLocation()">Share Current Location</button>
+      <button onclick="shareCurrentRoute()">Share Current Route</button>
+    </div>
   </div>
 
-  <div>
-    <select id="place-category">
-      <option value="restaurant">Restaurant</option>
-      <option value="cafe">Cafe</option>
-      <option value="gas_station">Gas Station</option>
-      <option value="park">Park</option>
-    </select>
-    <button onclick="findNearbyPlaces()">Find Nearby Places</button>
+  <div id="map-container">
+    <div id="map"></div>
   </div>
 
-  <div>
-    <button onclick="toggleTrafficLayer()">Toggle Traffic Layer</button>
-    <select id="map-style" onchange="changeMapStyle()">
-      <option value="default">Default</option>
-      <option value="satellite">Satellite</option>
-      <option value="terrain">Terrain</option>
-      <option value="dark">Dark Mode</option>
-    </select>
+  <div class="favorites">
+    <h3>Your Favorite Routes</h3>
+    <ul id="favorite-routes"></ul>
   </div>
 
-  <h3>Your Favorite Routes</h3>
-  <ul id="favorite-routes"></ul>
-  <button onclick="shareCurrentLocation()">Share Current Location</button>
-  <button onclick="shareCurrentRoute()">Share Current Route</button>
+  <footer>
+    &copy; 2025 Google Maps Advanced Tool. All Rights Reserved.
+  </footer>
 
-  <div id="map"></div>
-
+  <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCp2c5_T9vlA4a0bc1ANq-0sA13t86T024&libraries=places&callback=initMap" async defer></script>
   <script>
-    let map, directionsService, directionsRenderer, trafficLayer, currentLocation, markers = [];
-    const favoriteRoutes = JSON.parse(localStorage.getItem('favoriteRoutes')) || [];
+    let map, directionsService, directionsRenderer, currentLocation, trafficLayer;
+    const favoriteRoutes = [];
 
     function initMap() {
       directionsService = new google.maps.DirectionsService();
       directionsRenderer = new google.maps.DirectionsRenderer();
-      map = new google.maps.Map(document.getElementById('map'), {
+      map = new google.maps.Map(document.getElementById("map"), {
         center: { lat: 28.6139, lng: 77.209 },
         zoom: 12,
       });
       directionsRenderer.setMap(map);
-
-      trafficLayer = new google.maps.TrafficLayer(); // Initialize traffic layer
-      new google.maps.places.Autocomplete(document.getElementById('your-location'));
-      new google.maps.places.Autocomplete(document.getElementById('destination'));
-
-      displayFavoriteRoutes();
+      trafficLayer = new google.maps.TrafficLayer();
     }
 
     function getCurrentLocation() {
@@ -116,93 +199,67 @@
               lat: position.coords.latitude,
               lng: position.coords.longitude,
             };
-            document.getElementById('your-location').value = `${currentLocation.lat}, ${currentLocation.lng}`;
+            document.getElementById("your-location").value = `${currentLocation.lat}, ${currentLocation.lng}`;
             map.setCenter(currentLocation);
             new google.maps.Marker({
               position: currentLocation,
-              map: map,
-              title: 'Your Live Location',
+              map,
+              title: "Your Location",
             });
           },
-          () => {
-            alert('Failed to fetch your location. Please enable location services.');
-          },
+          () => alert("Failed to fetch your location. Enable location services."),
           { enableHighAccuracy: true }
         );
-      } else {
-        alert('Geolocation is not supported by your browser.');
-      }
+      } else alert("Geolocation not supported by your browser.");
     }
 
     function getDirections() {
-      const origin = document.getElementById('your-location').value;
-      const destination = document.getElementById('destination').value;
-      const mode = document.getElementById('mode').value;
+      const destination = document.getElementById("destination").value;
+      const mode = document.getElementById("mode").value;
 
       if (!destination) {
-        alert('Please enter a destination.');
+        alert("Enter a destination.");
         return;
       }
 
       const request = {
-        origin: origin,
+        origin: currentLocation,
         destination: destination,
         travelMode: google.maps.TravelMode[mode],
       };
 
       directionsService.route(request, (result, status) => {
-        if (status === 'OK') {
+        if (status === "OK") {
           directionsRenderer.setDirections(result);
-          saveFavoriteRoute(origin, destination, mode);
         } else {
-          alert('Could not get directions: ' + status);
+          alert("Could not find directions.");
         }
       });
     }
 
     function findNearbyPlaces() {
-      const category = document.getElementById('place-category').value;
+      const category = document.getElementById("place-category").value;
       const service = new google.maps.places.PlacesService(map);
-
-      clearMarkers();
 
       service.nearbySearch(
         {
           location: currentLocation,
           radius: 2000,
-          type: category,
+          type: [category],
         },
         (results, status) => {
           if (status === google.maps.places.PlacesServiceStatus.OK) {
-            results.forEach(place => createMarker(place));
-          } else {
-            alert('Error fetching nearby places: ' + status);
-          }
+            clearMarkers(); // Clear previous results
+            for (let place of results) {
+              createMarker(place);
+            }
+          } else alert("Failed to find places.");
         }
       );
     }
 
-    function createMarker(place) {
-      const marker = new google.maps.Marker({
-        map,
-        position: place.geometry.location,
-        title: place.name,
-      });
-
-      const infoWindow = new google.maps.InfoWindow({
-        content: `<div><strong>${place.name}</strong><br>${place.vicinity}</div>`,
-      });
-
-      marker.addListener('click', () => {
-        infoWindow.open(map, marker);
-      });
-
-      markers.push(marker);
-    }
-
     function clearMarkers() {
-      markers.forEach(marker => marker.setMap(null));
-      markers = [];
+      directionsRenderer.setDirections({ routes: [] });
     }
 
     function toggleTrafficLayer() {
@@ -214,67 +271,9 @@
     }
 
     function changeMapStyle() {
-      const style = document.getElementById('map-style').value;
-      switch (style) {
-        case 'satellite':
-          map.setMapTypeId(google.maps.MapTypeId.SATELLITE);
-          break;
-        case 'terrain':
-          map.setMapTypeId(google.maps.MapTypeId.TERRAIN);
-          break;
-        case 'dark':
-          map.setOptions({ styles: darkModeStyles });
-          break;
-        default:
-          map.setMapTypeId(google.maps.MapTypeId.ROADMAP);
-          map.setOptions({ styles: null });
-          break;
-      }
-    }
-
-    const darkModeStyles = [
-      { elementType: 'geometry', stylers: [{ color: '#212121' }] },
-      { elementType: 'labels.text.stroke', stylers: [{ color: '#212121' }] },
-      { elementType: 'labels.text.fill', stylers: [{ color: '#757575' }] },
-    ];
-
-    function saveFavoriteRoute(origin, destination, mode) {
-      favoriteRoutes.push({ origin, destination, mode });
-      localStorage.setItem('favoriteRoutes', JSON.stringify(favoriteRoutes));
-      displayFavoriteRoutes();
-    }
-
-    function displayFavoriteRoutes() {
-      const routeList = document.getElementById('favorite-routes');
-      routeList.innerHTML = '';
-      favoriteRoutes.forEach(route => {
-        const li = document.createElement('li');
-        li.textContent = `From: ${route.origin}, To: ${route.destination}, Mode: ${route.mode}`;
-        routeList.appendChild(li);
-      });
-    }
-
-    function shareCurrentLocation() {
-      if (!currentLocation) {
-        alert('Location not available.');
-        return;
-      }
-      const shareableURL = `https://www.google.com/maps?q=${currentLocation.lat},${currentLocation.lng}`;
-      alert(`Share this link: ${shareableURL}`);
-    }
-
-    function shareCurrentRoute() {
-      const origin = document.getElementById('your-location').value;
-      const destination = document.getElementById('destination').value;
-      if (!origin || !destination) {
-        alert('Origin or destination missing.');
-        return;
-      }
-      const shareableURL = `https://www.google.com/maps/dir/${encodeURIComponent(origin)}/${encodeURIComponent(destination)}`;
-      alert(`Share this route: ${shareableURL}`);
+      const style = document.getElementById("map-style").value;
+      map.setMapTypeId(google.maps.MapTypeId[style.toUpperCase()]);
     }
   </script>
-
-  <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCp2c5_T9vlA4a0bc1ANq-0sA13t86T024&libraries=places&callback=initMap" async defer></script>
 </body>
 </html>
