@@ -156,10 +156,10 @@
   <script>
     let map, currentLocation, trafficLayer;
     const shopData = [
-      { name: "Restaurant A", latitude: 30.346646, longitude: 76.414973, offer: "10% off on meals" },
-      { name: "Cafe B", latitude: 30.3456, longitude: 76.4160, offer: "Free coffee with snacks" },
-      { name: "Gas Station C", latitude: 30.3440, longitude: 76.4155, offer: "5% cashback on fuel" },
-      { name: "Park D", latitude: 30.3480, longitude: 76.4170, offer: "Weekend entry free" },
+      { name: "Restaurant A", latitude: 30.346646, longitude: 76.414973, offer: "10% off on meals", category: "restaurant" },
+      { name: "Cafe B", latitude: 30.3456, longitude: 76.4160, offer: "Free coffee with snacks", category: "cafe" },
+      { name: "Gas Station C", latitude: 30.3440, longitude: 76.4155, offer: "5% cashback on fuel", category: "gas_station" },
+      { name: "Park D", latitude: 30.3480, longitude: 76.4170, offer: "Weekend entry free", category: "park" },
     ];
 
     function initMap() {
@@ -194,15 +194,18 @@
 
     function findNearbyPlaces() {
       const category = document.getElementById("place-category").value;
-      const nearbyShops = shopData.filter((shop) =>
-        calculateDistance(shop.latitude, shop.longitude, currentLocation.lat, currentLocation.lng) <= 5
+      const filteredShops = shopData.filter(
+        (shop) =>
+          shop.category === category &&
+          calculateDistance(shop.latitude, shop.longitude, currentLocation.lat, currentLocation.lng) <= 5
       );
-      displayNearbyShops(nearbyShops);
+      displayNearbyShops(filteredShops);
     }
 
     function displayNearbyShops(shops) {
       const listContainer = document.getElementById("nearby-shops");
       listContainer.innerHTML = ""; // Clear previous list
+      clearMarkers(); // Clear previous markers
       shops.forEach((shop) => {
         createMarker(shop);
         addShopToList(shop);
@@ -230,6 +233,11 @@
       marker.addListener("click", () => {
         infoWindow.open(map, marker);
       });
+    }
+
+    function clearMarkers() {
+      const markers = document.querySelectorAll('.gm-style img'); 
+      markers.forEach((m) => m.parentNode.removeChild(m));
     }
 
     function calculateDistance(lat1, lng1, lat2, lng2) {
