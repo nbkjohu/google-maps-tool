@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Enhanced Google Maps Tool</title>
+  <title>Enhanced Google Maps with Advanced Features</title>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -11,14 +11,13 @@
       padding: 20px;
       text-align: center;
     }
+
     #map {
       height: 500px;
       width: 100%;
       margin: 20px 0;
     }
-    .controls {
-      margin: 10px 0;
-    }
+
     button {
       background-color: #4CAF50;
       color: white;
@@ -27,35 +26,38 @@
       margin: 5px;
       cursor: pointer;
     }
+
     button:hover {
       background-color: #45a049;
     }
+
+    select, input {
+      padding: 10px;
+      margin: 5px;
+    }
+
     ul {
       list-style: none;
       padding: 0;
     }
+
     ul li {
       margin: 5px 0;
       padding: 10px;
       background: #f4f4f4;
       border: 1px solid #ddd;
-    }
-    .autocomplete-input {
-      width: 250px;
-      padding: 8px;
-      margin: 5px;
-      border: 1px solid #ddd;
+      cursor: pointer;
     }
   </style>
 </head>
 <body>
-  <h1>Enhanced Google Maps Tool</h1>
+  <h1>Enhanced Google Maps with Advanced Features</h1>
 
-  <div class="controls">
-    <input id="your-location" class="autocomplete-input" placeholder="Your location" readonly>
-    <button onclick="getCurrentLocation()">Get Current Location</button>
-    <br>
-    <input id="destination" class="autocomplete-input" placeholder="Enter Destination">
+  <div>
+    <input id="your-location" placeholder="Your location" readonly>
+    <button onclick="getCurrentLocation()">Get Live Location</button>
+    <br><br>
+    <input id="destination" placeholder="Destination">
     <select id="mode">
       <option value="DRIVING">Driving</option>
       <option value="WALKING">Walking</option>
@@ -63,14 +65,26 @@
       <option value="TRANSIT">Transit</option>
     </select>
     <button onclick="getDirections()">Get Directions</button>
+  </div>
+
+  <div>
+    <select id="place-category">
+      <option value="restaurant">Restaurant</option>
+      <option value="cafe">Cafe</option>
+      <option value="gas_station">Gas Station</option>
+      <option value="park">Park</option>
+    </select>
     <button onclick="findNearbyPlaces()">Find Nearby Places</button>
   </div>
 
+  <h3>Your Favorite Locations</h3>
+  <ul id="favorite-list"></ul>
+
   <div id="map"></div>
-  <ul id="nearby-places"></ul>
 
   <script>
-    let map, directionsService, directionsRenderer, currentLocation, autocomplete, nearbyService;
+    let map, directionsService, directionsRenderer, currentLocation;
+    const favoriteLocations = JSON.parse(localStorage.getItem('favorites')) || [];
 
     function initMap() {
       directionsService = new google.maps.DirectionsService();
@@ -80,9 +94,7 @@
         zoom: 12,
       });
       directionsRenderer.setMap(map);
-
-      autocomplete = new google.maps.places.Autocomplete(document.getElementById('destination'));
-      nearbyService = new google.maps.places.PlacesService(map);
+      displayFavorites();
     }
 
     function getCurrentLocation() {
@@ -98,13 +110,14 @@
             new google.maps.Marker({
               position: currentLocation,
               map: map,
-              title: 'Your Location',
+              title: 'Your Live Location',
             });
           },
-          () => {
-            alert('Failed to fetch your location. Please enable location services.');
+          (error) => {
+            alert('Error fetching location. Please enable GPS or try again later.');
+            console.error('Geolocation error:', error);
           },
-          { enableHighAccuracy: true }
+          { enableHighAccuracy: true, timeout: 10000 }
         );
       } else {
         alert('Geolocation is not supported by your browser.');
@@ -138,15 +151,18 @@
     }
 
     function findNearbyPlaces() {
-      nearbyService.nearbySearch(
+      const category = document.getElementById('place-category').value;
+      const service = new google.maps.places.PlacesService(map);
+
+      service.nearbySearch(
         {
           location: currentLocation,
           radius: 2000,
-          type: 'restaurant',
+          type: category,
         },
         (results, status) => {
           if (status === google.maps.places.PlacesServiceStatus.OK) {
-            displayNearbyPlaces(results);
+            results.forEach(place => createMarker(place));
           } else {
             alert('Error fetching nearby places: ' + status);
           }
@@ -154,27 +170,46 @@
       );
     }
 
-    function displayNearbyPlaces(places) {
-      const nearbyList = document.getElementById('nearby-places');
-      nearbyList.innerHTML = '';
+    function createMarker(place) {
+      const marker = new google.maps.Marker({
+        map,
+        position: place.geometry.location,
+        title: place.name,
+      });
 
-      places.forEach((place) => {
+      const infoWindow = new google.maps.InfoWindow({
+        content: `<div><strong>${place.name}</strong><br>${place.vicinity}</div>`,
+      });
+
+      marker.addListener('click', () => {
+        infoWindow.open(map, marker);
+      });
+    }
+
+    function saveFavorite() {
+      const locationName = prompt('Enter a name for this favorite location:');
+      if (locationName) {
+        favoriteLocations.push({ name: locationName, location: currentLocation });
+        localStorage.setItem('favorites', JSON.stringify(favoriteLocations));
+        displayFavorites();
+      }
+    }
+
+    function displayFavorites() {
+      const favoriteList = document.getElementById('favorite-list');
+      favoriteList.innerHTML = '';
+      favoriteLocations.forEach((fav) => {
         const li = document.createElement('li');
-        li.textContent = `${place.name} - ${place.vicinity}`;
-        nearbyList.appendChild(li);
-
-        const marker = new google.maps.Marker({
-          map: map,
-          position: place.geometry.location,
-          title: place.name,
-        });
-
-        marker.addListener('click', () => {
-          const infoWindow = new google.maps.InfoWindow({
-            content: `<div><strong>${place.name}</strong><br>${place.vicinity}</div>`,
+        li.textContent = `${fav.name}: (${fav.location.lat}, ${fav.location.lng})`;
+        li.onclick = () => {
+          map.setCenter(fav.location);
+          new google.maps.Marker({
+            map,
+            position: fav.location,
+            title: fav.name,
           });
-          infoWindow.open(map, marker);
-        });
+        };
+        favoriteList.appendChild(li);
       });
     }
   </script>
