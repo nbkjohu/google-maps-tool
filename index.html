@@ -3,98 +3,140 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Enhanced Google Maps with Accurate Location</title>
+  <title>Enhanced Google Maps with Autocomplete</title>
   <style>
     body {
       font-family: Arial, sans-serif;
-      text-align: center;
       margin: 0;
       padding: 20px;
+      text-align: center;
     }
+
     #map {
-      width: 100%;
       height: 500px;
-      margin-top: 20px;
+      width: 100%;
+      margin: 20px 0;
     }
+
     button {
       background-color: #4CAF50;
       color: white;
       border: none;
-      padding: 10px 15px;
+      padding: 10px 20px;
       margin: 5px;
       cursor: pointer;
     }
+
     button:hover {
       background-color: #45a049;
+    }
+
+    ul {
+      list-style: none;
+      padding: 0;
+    }
+
+    ul li {
+      margin: 5px 0;
+      padding: 10px;
+      background: #f4f4f4;
+      border: 1px solid #ddd;
     }
   </style>
 </head>
 <body>
-  <h1>Enhanced Google Maps with Accurate Location</h1>
+  <h1>Enhanced Google Maps with Autocomplete</h1>
+
   <div>
-    <input id="location" type="text" placeholder="Your live location" readonly>
-    <button onclick="getLiveLocation()">Get Live Location</button>
+    <input id="your-location" placeholder="Your location">
+    <button onclick="getCurrentLocation()">Get Current Location</button>
     <br><br>
-    <div id="map"></div>
+    <input id="destination" placeholder="Destination">
+    <select id="mode">
+      <option value="DRIVING">Driving</option>
+      <option value="WALKING">Walking</option>
+      <option value="BICYCLING">Bicycling</option>
+      <option value="TRANSIT">Transit</option>
+    </select>
+    <button onclick="getDirections()">Search</button>
   </div>
 
-  <script>
-    let map, marker;
+  <div id="map"></div>
 
-    // Initialize the Google Map
+  <script>
+    let map, directionsService, directionsRenderer, currentLocation;
+    let autocompleteOrigin, autocompleteDestination;
+
     function initMap() {
+      directionsService = new google.maps.DirectionsService();
+      directionsRenderer = new google.maps.DirectionsRenderer();
       map = new google.maps.Map(document.getElementById('map'), {
         center: { lat: 28.6139, lng: 77.209 },
         zoom: 12,
       });
+      directionsRenderer.setMap(map);
+
+      // Initialize Autocomplete for input fields
+      autocompleteOrigin = new google.maps.places.Autocomplete(document.getElementById('your-location'));
+      autocompleteDestination = new google.maps.places.Autocomplete(document.getElementById('destination'));
     }
 
-    // Function to get the live location with high accuracy
-    function getLiveLocation() {
+    function getCurrentLocation() {
       if (navigator.geolocation) {
         navigator.geolocation.getCurrentPosition(
           (position) => {
-            const lat = position.coords.latitude;
-            const lng = position.coords.longitude;
-            const accuracy = position.coords.accuracy;
-
-            // Update the map and marker
-            updateLocation(lat, lng, accuracy);
+            currentLocation = {
+              lat: position.coords.latitude,
+              lng: position.coords.longitude,
+            };
+            const locationField = document.getElementById('your-location');
+            locationField.value = `${currentLocation.lat}, ${currentLocation.lng}`;
+            map.setCenter(currentLocation);
+            new google.maps.Marker({
+              position: currentLocation,
+              map: map,
+              title: 'Your Location',
+            });
           },
-          (error) => {
-            console.error("Error fetching location:", error);
-            alert("Failed to fetch your location. Please enable location services.");
-          },
-          {
-            enableHighAccuracy: true, // Request high accuracy location
-            timeout: 10000,          // 10 seconds timeout
-            maximumAge: 0,           // Do not use cached location
+          () => {
+            alert('Failed to fetch your location. Please enable location services in your browser.');
           }
         );
       } else {
-        alert("Geolocation is not supported by your browser.");
+        alert('Geolocation is not supported by your browser.');
       }
     }
 
-    // Function to update the map with the detected location
-    function updateLocation(lat, lng, accuracy) {
-      const location = { lat, lng };
-      document.getElementById("location").value = `${lat.toFixed(6)}, ${lng.toFixed(6)} (Accuracy: ${accuracy} meters)`;
+    function getDirections() {
+      const origin = document.getElementById('your-location').value;
+      const destination = document.getElementById('destination').value;
+      const mode = document.getElementById('mode').value;
 
-      // Center the map to the current location
-      map.setCenter(location);
-
-      // Update the marker
-      if (marker) {
-        marker.setMap(null); // Remove existing marker
+      if (!destination) {
+        alert('Please enter a destination.');
+        return;
       }
-      marker = new google.maps.Marker({
-        position: location,
-        map: map,
-        title: `Accuracy: ${accuracy} meters`,
+
+      const request = {
+        origin: origin,
+        destination: destination,
+        travelMode: google.maps.TravelMode[mode],
+      };
+
+      directionsService.route(request, (result, status) => {
+        if (status === 'OK') {
+          directionsRenderer.setDirections(result);
+
+          // Display distance and duration
+          const route = result.routes[0].legs[0];
+          alert(`Distance: ${route.distance.text}, Duration: ${route.duration.text}`);
+        } else {
+          alert('Could not get directions: ' + status);
+        }
       });
     }
   </script>
-  <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCp2c5_T9vlA4a0bc1ANq-0sA13t86T024&callback=initMap" async defer></script>
+
+  <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCp2c5_T9vlA4a0bc1ANq-0sA13t86T024&libraries=places&callback=initMap" async defer></script>
 </body>
 </html>
