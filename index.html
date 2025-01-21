@@ -17,6 +17,7 @@
       background-color: #4CAF50;
       color: white;
       padding: 20px 0;
+      margin-bottom: 20px;
     }
 
     header h1 {
@@ -29,7 +30,7 @@
       flex-wrap: wrap;
       justify-content: center;
       gap: 10px;
-      padding: 20px;
+      padding: 10px;
       background-color: white;
       border: 1px solid #ddd;
       border-radius: 10px;
@@ -38,19 +39,18 @@
       max-width: 800px;
     }
 
-    select, button {
+    input, select, button {
       width: 100%;
       padding: 10px;
       margin-bottom: 10px;
       border: 1px solid #ddd;
       border-radius: 5px;
-      font-size: 16px;
+      box-sizing: border-box;
     }
 
     button {
       background-color: #4CAF50;
       color: white;
-      cursor: pointer;
       font-weight: bold;
     }
 
@@ -99,6 +99,16 @@
       margin: 5px 0;
       border-radius: 5px;
     }
+
+    footer {
+      text-align: center;
+      padding: 10px;
+      background-color: #4CAF50;
+      color: white;
+      position: relative;
+      bottom: 0;
+      width: 100%;
+    }
   </style>
 </head>
 <body>
@@ -108,14 +118,6 @@
 
   <div id="controls">
     <button onclick="getCurrentLocation()">Get Live Location</button>
-    <select id="category-selector">
-      <option value="all">All Categories</option>
-      <option value="restaurant">Restaurants</option>
-      <option value="cafe">Cafes</option>
-      <option value="gas_station">Gas Stations</option>
-      <option value="park">Parks</option>
-    </select>
-    <button onclick="findNearbyOffers()">Search Nearby Offers</button>
   </div>
 
   <div id="map-container">
@@ -127,7 +129,11 @@
     <ul id="offers-list"></ul>
   </div>
 
-  <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCp2c5_T9vlA4a0bc1ANq-0sA13t86T024&callback=initMap&libraries=places" async defer></script>
+  <footer>
+    &copy; 2025 Offers App. All Rights Reserved.
+  </footer>
+
+  <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCp2c5_T9vlA4a0bc1ANq-0sA13t86T024&callback=initMap" async defer></script>
   <script>
     let map, currentLocation, markers = [];
     const shopData = [
@@ -153,11 +159,14 @@
               lng: position.coords.longitude,
             };
             map.setCenter(currentLocation);
-            addMarker(currentLocation, "You are here");
+            addMarker(currentLocation, "Your Location");
             findNearbyOffers();
           },
-          () => alert("Failed to fetch location. Please enable location services."),
-          { enableHighAccuracy: true }
+          (error) => {
+            alert("Failed to fetch location. Please enable location services.");
+            console.error("Geolocation Error:", error.message);
+          },
+          { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
         );
       } else {
         alert("Geolocation is not supported by your browser.");
@@ -166,11 +175,8 @@
 
     function findNearbyOffers() {
       const radius = 2; // Radius in km
-      const selectedCategory = document.getElementById("category-selector").value;
       const offersList = document.getElementById("offers-list");
       offersList.innerHTML = "";
-
-      clearMarkers();
 
       shopData.forEach((shop) => {
         const distance = calculateDistance(
@@ -180,7 +186,7 @@
           shop.longitude
         );
 
-        if ((selectedCategory === "all" || shop.category === selectedCategory) && distance <= radius) {
+        if (distance <= radius) {
           addMarker({ lat: shop.latitude, lng: shop.longitude }, shop.name);
           const listItem = document.createElement("li");
           listItem.textContent = `${shop.name} - ${shop.offer}`;
@@ -196,11 +202,6 @@
         title,
       });
       markers.push(marker);
-    }
-
-    function clearMarkers() {
-      markers.forEach((marker) => marker.setMap(null));
-      markers = [];
     }
 
     function calculateDistance(lat1, lng1, lat2, lng2) {
