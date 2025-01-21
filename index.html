@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Enhanced Google Maps with Favorites</title>
+  <title>Enhanced Google Maps</title>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -59,7 +59,7 @@
   </style>
 </head>
 <body>
-  <h1>Enhanced Google Maps with Favorites</h1>
+  <h1>Enhanced Google Maps</h1>
 
   <div>
     <input id="your-location" placeholder="Your location">
@@ -94,6 +94,14 @@
         zoom: 12,
       });
       directionsRenderer.setMap(map);
+
+      // Add Google Maps Autocomplete
+      const locationInput = document.getElementById('your-location');
+      const destinationInput = document.getElementById('destination');
+
+      new google.maps.places.Autocomplete(locationInput);
+      new google.maps.places.Autocomplete(destinationInput);
+
       loadFavorites();
     }
 
@@ -115,7 +123,8 @@
           },
           () => {
             alert('Failed to fetch your location. Please enable location services in your browser.');
-          }
+          },
+          { enableHighAccuracy: true }
         );
       } else {
         alert('Geolocation is not supported by your browser.');
