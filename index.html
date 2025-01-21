@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Google Maps with Enhanced Features</title>
+  <title>Google Maps with Advanced Features</title>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -45,7 +45,7 @@
   </style>
 </head>
 <body>
-  <h1>Google Maps with Enhanced Features</h1>
+  <h1>Google Maps with Advanced Features</h1>
 
   <div>
     <input id="your-location" placeholder="Your location">
@@ -71,15 +71,26 @@
     <button onclick="findNearbyPlaces()">Find Nearby Places</button>
   </div>
 
-  <h3>Your Favorite Locations</h3>
-  <ul id="favorite-list"></ul>
+  <div>
+    <button onclick="toggleTrafficLayer()">Toggle Traffic Layer</button>
+    <select id="map-style" onchange="changeMapStyle()">
+      <option value="default">Default</option>
+      <option value="satellite">Satellite</option>
+      <option value="terrain">Terrain</option>
+      <option value="dark">Dark Mode</option>
+    </select>
+  </div>
+
+  <h3>Your Favorite Routes</h3>
+  <ul id="favorite-routes"></ul>
+  <button onclick="shareCurrentLocation()">Share Current Location</button>
+  <button onclick="shareCurrentRoute()">Share Current Route</button>
 
   <div id="map"></div>
 
   <script>
-    let map, directionsService, directionsRenderer, currentLocation;
-    let markers = []; // Array to store markers
-    const favoriteLocations = JSON.parse(localStorage.getItem('favorites')) || [];
+    let map, directionsService, directionsRenderer, trafficLayer, currentLocation, markers = [];
+    const favoriteRoutes = JSON.parse(localStorage.getItem('favoriteRoutes')) || [];
 
     function initMap() {
       directionsService = new google.maps.DirectionsService();
@@ -90,11 +101,11 @@
       });
       directionsRenderer.setMap(map);
 
-      // Autocomplete for inputs
+      trafficLayer = new google.maps.TrafficLayer(); // Initialize traffic layer
       new google.maps.places.Autocomplete(document.getElementById('your-location'));
       new google.maps.places.Autocomplete(document.getElementById('destination'));
 
-      displayFavorites();
+      displayFavoriteRoutes();
     }
 
     function getCurrentLocation() {
@@ -142,6 +153,7 @@
       directionsService.route(request, (result, status) => {
         if (status === 'OK') {
           directionsRenderer.setDirections(result);
+          saveFavoriteRoute(origin, destination, mode);
         } else {
           alert('Could not get directions: ' + status);
         }
@@ -152,7 +164,6 @@
       const category = document.getElementById('place-category').value;
       const service = new google.maps.places.PlacesService(map);
 
-      // Clear existing markers
       clearMarkers();
 
       service.nearbySearch(
@@ -186,40 +197,81 @@
         infoWindow.open(map, marker);
       });
 
-      markers.push(marker); // Add marker to array
+      markers.push(marker);
     }
 
     function clearMarkers() {
-      // Remove all existing markers from the map
       markers.forEach(marker => marker.setMap(null));
-      markers = []; // Clear the array
+      markers = [];
     }
 
-    function saveFavorite() {
-      const locationName = prompt('Enter a name for this favorite location:');
-      if (locationName) {
-        favoriteLocations.push({ name: locationName, location: currentLocation });
-        localStorage.setItem('favorites', JSON.stringify(favoriteLocations));
-        displayFavorites();
+    function toggleTrafficLayer() {
+      if (trafficLayer.getMap()) {
+        trafficLayer.setMap(null);
+      } else {
+        trafficLayer.setMap(map);
       }
     }
 
-    function displayFavorites() {
-      const favoriteList = document.getElementById('favorite-list');
-      favoriteList.innerHTML = '';
-      favoriteLocations.forEach((fav) => {
+    function changeMapStyle() {
+      const style = document.getElementById('map-style').value;
+      switch (style) {
+        case 'satellite':
+          map.setMapTypeId(google.maps.MapTypeId.SATELLITE);
+          break;
+        case 'terrain':
+          map.setMapTypeId(google.maps.MapTypeId.TERRAIN);
+          break;
+        case 'dark':
+          map.setOptions({ styles: darkModeStyles });
+          break;
+        default:
+          map.setMapTypeId(google.maps.MapTypeId.ROADMAP);
+          map.setOptions({ styles: null });
+          break;
+      }
+    }
+
+    const darkModeStyles = [
+      { elementType: 'geometry', stylers: [{ color: '#212121' }] },
+      { elementType: 'labels.text.stroke', stylers: [{ color: '#212121' }] },
+      { elementType: 'labels.text.fill', stylers: [{ color: '#757575' }] },
+    ];
+
+    function saveFavoriteRoute(origin, destination, mode) {
+      favoriteRoutes.push({ origin, destination, mode });
+      localStorage.setItem('favoriteRoutes', JSON.stringify(favoriteRoutes));
+      displayFavoriteRoutes();
+    }
+
+    function displayFavoriteRoutes() {
+      const routeList = document.getElementById('favorite-routes');
+      routeList.innerHTML = '';
+      favoriteRoutes.forEach(route => {
         const li = document.createElement('li');
-        li.textContent = `${fav.name}: (${fav.location.lat}, ${fav.location.lng})`;
-        li.onclick = () => {
-          map.setCenter(fav.location);
-          new google.maps.Marker({
-            map,
-            position: fav.location,
-            title: fav.name,
-          });
-        };
-        favoriteList.appendChild(li);
+        li.textContent = `From: ${route.origin}, To: ${route.destination}, Mode: ${route.mode}`;
+        routeList.appendChild(li);
       });
+    }
+
+    function shareCurrentLocation() {
+      if (!currentLocation) {
+        alert('Location not available.');
+        return;
+      }
+      const shareableURL = `https://www.google.com/maps?q=${currentLocation.lat},${currentLocation.lng}`;
+      alert(`Share this link: ${shareableURL}`);
+    }
+
+    function shareCurrentRoute() {
+      const origin = document.getElementById('your-location').value;
+      const destination = document.getElementById('destination').value;
+      if (!origin || !destination) {
+        alert('Origin or destination missing.');
+        return;
+      }
+      const shareableURL = `https://www.google.com/maps/dir/${encodeURIComponent(origin)}/${encodeURIComponent(destination)}`;
+      alert(`Share this route: ${shareableURL}`);
     }
   </script>
 
