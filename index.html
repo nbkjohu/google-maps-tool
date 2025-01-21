@@ -17,7 +17,6 @@
       background-color: #4CAF50;
       color: white;
       padding: 20px 0;
-      margin-bottom: 20px;
     }
 
     header h1 {
@@ -30,7 +29,7 @@
       flex-wrap: wrap;
       justify-content: center;
       gap: 10px;
-      padding: 10px;
+      padding: 20px;
       background-color: white;
       border: 1px solid #ddd;
       border-radius: 10px;
@@ -39,18 +38,19 @@
       max-width: 800px;
     }
 
-    input, select, button {
+    select, button {
       width: 100%;
       padding: 10px;
       margin-bottom: 10px;
       border: 1px solid #ddd;
       border-radius: 5px;
-      box-sizing: border-box;
+      font-size: 16px;
     }
 
     button {
       background-color: #4CAF50;
       color: white;
+      cursor: pointer;
       font-weight: bold;
     }
 
@@ -99,16 +99,6 @@
       margin: 5px 0;
       border-radius: 5px;
     }
-
-    footer {
-      text-align: center;
-      padding: 10px;
-      background-color: #4CAF50;
-      color: white;
-      position: relative;
-      bottom: 0;
-      width: 100%;
-    }
   </style>
 </head>
 <body>
@@ -137,10 +127,6 @@
     <ul id="offers-list"></ul>
   </div>
 
-  <footer>
-    &copy; 2025 Offers App. All Rights Reserved.
-  </footer>
-
   <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCp2c5_T9vlA4a0bc1ANq-0sA13t86T024&callback=initMap&libraries=places" async defer></script>
   <script>
     let map, currentLocation, markers = [];
@@ -167,14 +153,11 @@
               lng: position.coords.longitude,
             };
             map.setCenter(currentLocation);
-            addMarkerWithInfo(currentLocation, "Your Location", "You are here");
-            findNearbyOffers(); // Automatically fetch nearby offers
+            addMarker(currentLocation, "You are here");
+            findNearbyOffers();
           },
-          (error) => {
-            alert("Failed to fetch location. Please enable location services.");
-            console.error("Geolocation Error:", error.message);
-          },
-          { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+          () => alert("Failed to fetch location. Please enable location services."),
+          { enableHighAccuracy: true }
         );
       } else {
         alert("Geolocation is not supported by your browser.");
@@ -187,9 +170,7 @@
       const offersList = document.getElementById("offers-list");
       offersList.innerHTML = "";
 
-      // Clear existing markers
-      markers.forEach((marker) => marker.setMap(null));
-      markers = [];
+      clearMarkers();
 
       shopData.forEach((shop) => {
         const distance = calculateDistance(
@@ -200,11 +181,7 @@
         );
 
         if ((selectedCategory === "all" || shop.category === selectedCategory) && distance <= radius) {
-          addMarkerWithInfo(
-            { lat: shop.latitude, lng: shop.longitude },
-            shop.name,
-            shop.offer
-          );
+          addMarker({ lat: shop.latitude, lng: shop.longitude }, shop.name);
           const listItem = document.createElement("li");
           listItem.textContent = `${shop.name} - ${shop.offer}`;
           offersList.appendChild(listItem);
@@ -212,21 +189,18 @@
       });
     }
 
-    function addMarkerWithInfo(location, title, info) {
+    function addMarker(location, title) {
       const marker = new google.maps.Marker({
         position: location,
         map,
         title,
       });
       markers.push(marker);
+    }
 
-      const infoWindow = new google.maps.InfoWindow({
-        content: `<strong>${title}</strong><br>${info}`,
-      });
-
-      marker.addListener("click", () => {
-        infoWindow.open(map, marker);
-      });
+    function clearMarkers() {
+      markers.forEach((marker) => marker.setMap(null));
+      markers = [];
     }
 
     function calculateDistance(lat1, lng1, lat2, lng2) {
