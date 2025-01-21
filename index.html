@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Enhanced Google Maps</title>
+  <title>Enhanced Google Maps Tool</title>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -11,13 +11,14 @@
       padding: 20px;
       text-align: center;
     }
-
     #map {
       height: 500px;
       width: 100%;
       margin: 20px 0;
     }
-
+    .controls {
+      margin: 10px 0;
+    }
     button {
       background-color: #4CAF50;
       color: white;
@@ -26,65 +27,50 @@
       margin: 5px;
       cursor: pointer;
     }
-
     button:hover {
       background-color: #45a049;
     }
-
     ul {
       list-style: none;
       padding: 0;
     }
-
     ul li {
       margin: 5px 0;
       padding: 10px;
       background: #f4f4f4;
       border: 1px solid #ddd;
-      display: flex;
-      justify-content: space-between;
     }
-
-    ul li button {
-      background-color: #f44336;
-      color: white;
-      border: none;
-      padding: 5px 10px;
-      cursor: pointer;
-    }
-
-    ul li button:hover {
-      background-color: #d32f2f;
+    .autocomplete-input {
+      width: 250px;
+      padding: 8px;
+      margin: 5px;
+      border: 1px solid #ddd;
     }
   </style>
 </head>
 <body>
-  <h1>Enhanced Google Maps</h1>
+  <h1>Enhanced Google Maps Tool</h1>
 
-  <div>
-    <input id="your-location" placeholder="Your location">
+  <div class="controls">
+    <input id="your-location" class="autocomplete-input" placeholder="Your location" readonly>
     <button onclick="getCurrentLocation()">Get Current Location</button>
-    <br><br>
-    <input id="destination" placeholder="Destination">
+    <br>
+    <input id="destination" class="autocomplete-input" placeholder="Enter Destination">
     <select id="mode">
       <option value="DRIVING">Driving</option>
       <option value="WALKING">Walking</option>
       <option value="BICYCLING">Bicycling</option>
       <option value="TRANSIT">Transit</option>
     </select>
-    <button onclick="getDirections()">Search</button>
-    <br><br>
-    <button onclick="saveFavorite()">Save Favorite Location</button>
+    <button onclick="getDirections()">Get Directions</button>
+    <button onclick="findNearbyPlaces()">Find Nearby Places</button>
   </div>
 
-  <h3>Favorite Locations</h3>
-  <ul id="favorites"></ul>
-
   <div id="map"></div>
+  <ul id="nearby-places"></ul>
 
   <script>
-    let map, directionsService, directionsRenderer, currentLocation;
-    const favoriteLocations = JSON.parse(localStorage.getItem('favoriteLocations')) || [];
+    let map, directionsService, directionsRenderer, currentLocation, autocomplete, nearbyService;
 
     function initMap() {
       directionsService = new google.maps.DirectionsService();
@@ -95,14 +81,8 @@
       });
       directionsRenderer.setMap(map);
 
-      // Add Google Maps Autocomplete
-      const locationInput = document.getElementById('your-location');
-      const destinationInput = document.getElementById('destination');
-
-      new google.maps.places.Autocomplete(locationInput);
-      new google.maps.places.Autocomplete(destinationInput);
-
-      loadFavorites();
+      autocomplete = new google.maps.places.Autocomplete(document.getElementById('destination'));
+      nearbyService = new google.maps.places.PlacesService(map);
     }
 
     function getCurrentLocation() {
@@ -122,7 +102,7 @@
             });
           },
           () => {
-            alert('Failed to fetch your location. Please enable location services in your browser.');
+            alert('Failed to fetch your location. Please enable location services.');
           },
           { enableHighAccuracy: true }
         );
@@ -132,7 +112,6 @@
     }
 
     function getDirections() {
-      const origin = document.getElementById('your-location').value;
       const destination = document.getElementById('destination').value;
       const mode = document.getElementById('mode').value;
 
@@ -142,7 +121,7 @@
       }
 
       const request = {
-        origin: origin,
+        origin: currentLocation,
         destination: destination,
         travelMode: google.maps.TravelMode[mode],
       };
@@ -150,8 +129,6 @@
       directionsService.route(request, (result, status) => {
         if (status === 'OK') {
           directionsRenderer.setDirections(result);
-
-          // Display distance and duration
           const route = result.routes[0].legs[0];
           alert(`Distance: ${route.distance.text}, Duration: ${route.duration.text}`);
         } else {
@@ -160,38 +137,45 @@
       });
     }
 
-    function saveFavorite() {
-      const locationName = prompt('Enter a name for this location:');
-      const locationValue = document.getElementById('your-location').value;
-
-      if (!locationName || !locationValue) {
-        alert('Both location and name are required to save a favorite.');
-        return;
-      }
-
-      favoriteLocations.push({ name: locationName, location: locationValue });
-      localStorage.setItem('favoriteLocations', JSON.stringify(favoriteLocations));
-      loadFavorites();
+    function findNearbyPlaces() {
+      nearbyService.nearbySearch(
+        {
+          location: currentLocation,
+          radius: 2000,
+          type: 'restaurant',
+        },
+        (results, status) => {
+          if (status === google.maps.places.PlacesServiceStatus.OK) {
+            displayNearbyPlaces(results);
+          } else {
+            alert('Error fetching nearby places: ' + status);
+          }
+        }
+      );
     }
 
-    function loadFavorites() {
-      const favoritesList = document.getElementById('favorites');
-      favoritesList.innerHTML = '';
+    function displayNearbyPlaces(places) {
+      const nearbyList = document.getElementById('nearby-places');
+      nearbyList.innerHTML = '';
 
-      favoriteLocations.forEach((fav, index) => {
-        const listItem = document.createElement('li');
-        listItem.innerHTML = `
-          ${fav.name} (${fav.location})
-          <button onclick="removeFavorite(${index})">Delete</button>
-        `;
-        favoritesList.appendChild(listItem);
+      places.forEach((place) => {
+        const li = document.createElement('li');
+        li.textContent = `${place.name} - ${place.vicinity}`;
+        nearbyList.appendChild(li);
+
+        const marker = new google.maps.Marker({
+          map: map,
+          position: place.geometry.location,
+          title: place.name,
+        });
+
+        marker.addListener('click', () => {
+          const infoWindow = new google.maps.InfoWindow({
+            content: `<div><strong>${place.name}</strong><br>${place.vicinity}</div>`,
+          });
+          infoWindow.open(map, marker);
+        });
       });
-    }
-
-    function removeFavorite(index) {
-      favoriteLocations.splice(index, 1);
-      localStorage.setItem('favoriteLocations', JSON.stringify(favoriteLocations));
-      loadFavorites();
     }
   </script>
 
