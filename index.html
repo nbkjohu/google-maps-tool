@@ -187,7 +187,8 @@
       const offersList = document.getElementById("offers-list");
       offersList.innerHTML = "";
 
-      markers.forEach((marker) => marker.setMap(null)); // Clear existing markers
+      // Clear existing markers
+      markers.forEach((marker) => marker.setMap(null));
       markers = [];
 
       shopData.forEach((shop) => {
