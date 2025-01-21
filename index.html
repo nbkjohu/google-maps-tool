@@ -133,7 +133,7 @@
     &copy; 2025 Offers App. All Rights Reserved.
   </footer>
 
-  <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCp2c5_T9vlA4a0bc1ANq-0sA13t86T024&libraries=places&callback=initMap" async defer></script>
+  <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCp2c5_T9vlA4a0bc1ANq-0sA13t86T024&callback=initMap" async defer></script>
   <script>
     let map, currentLocation, markers = [];
     const shopData = [
@@ -159,7 +159,7 @@
               lng: position.coords.longitude,
             };
             map.setCenter(currentLocation);
-            addMarker(currentLocation, "Your Location");
+            addMarkerWithInfo(currentLocation, "Your Location", "You are here");
             findNearbyOffers();
           },
           (error) => {
@@ -187,7 +187,11 @@
         );
 
         if (distance <= radius) {
-          addMarkerWithInfo({ lat: shop.latitude, lng: shop.longitude }, shop.name, shop.offer);
+          addMarkerWithInfo(
+            { lat: shop.latitude, lng: shop.longitude },
+            shop.name,
+            shop.offer
+          );
           const listItem = document.createElement("li");
           listItem.textContent = `${shop.name} - ${shop.offer}`;
           offersList.appendChild(listItem);
@@ -195,7 +199,7 @@
       });
     }
 
-    function addMarkerWithInfo(location, title, offer) {
+    function addMarkerWithInfo(location, title, info) {
       const marker = new google.maps.Marker({
         position: location,
         map,
@@ -204,7 +208,7 @@
       markers.push(marker);
 
       const infoWindow = new google.maps.InfoWindow({
-        content: `<strong>${title}</strong><br>${offer}`,
+        content: `<strong>${title}</strong><br>${info}`,
       });
 
       marker.addListener("click", () => {
