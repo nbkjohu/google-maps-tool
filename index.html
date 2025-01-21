@@ -39,11 +39,6 @@
       max-width: 800px;
     }
 
-    #controls div {
-      flex: 1 1 250px;
-      min-width: 200px;
-    }
-
     input, select, button {
       width: 100%;
       padding: 10px;
@@ -78,7 +73,7 @@
       width: 100%;
     }
 
-    .favorites {
+    .offers {
       margin: 20px auto;
       width: 90%;
       max-width: 800px;
@@ -89,7 +84,7 @@
       text-align: left;
     }
 
-    .favorites h3 {
+    .offers h3 {
       margin-top: 0;
     }
 
@@ -124,28 +119,23 @@
   </header>
 
   <div id="controls">
-    <div>
-      <input id="your-location" placeholder="Your location">
-      <button onclick="getCurrentLocation()">Get Live Location</button>
-    </div>
-    <div>
-      <select id="place-category">
-        <option value="restaurant">Restaurant</option>
-        <option value="cafe">Cafe</option>
-        <option value="gas_station">Gas Station</option>
-        <option value="park">Park</option>
-      </select>
-      <button onclick="findNearbyPlaces()">Find Nearby Places</button>
-    </div>
+    <button onclick="getCurrentLocation()">Get Live Location</button>
+    <select id="place-category">
+      <option value="restaurant">Restaurant</option>
+      <option value="cafe">Cafe</option>
+      <option value="gas_station">Gas Station</option>
+      <option value="park">Park</option>
+    </select>
+    <button onclick="findNearbyPlaces()">Find Nearby Places</button>
   </div>
 
   <div id="map-container">
     <div id="map"></div>
   </div>
 
-  <div class="favorites">
+  <div class="offers">
     <h3>Nearby Shops and Offers</h3>
-    <ul id="nearby-shops"></ul>
+    <ul id="offers-list"></ul>
   </div>
 
   <footer>
@@ -154,102 +144,75 @@
 
   <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCp2c5_T9vlA4a0bc1ANq-0sA13t86T024&libraries=places&callback=initMap" async defer></script>
   <script>
-    let map, currentLocation, trafficLayer;
-    const shopData = [
-      { name: "Restaurant A", latitude: 30.346646, longitude: 76.414973, offer: "10% off on meals", category: "restaurant" },
-      { name: "Cafe B", latitude: 30.3456, longitude: 76.4160, offer: "Free coffee with snacks", category: "cafe" },
-      { name: "Gas Station C", latitude: 30.3440, longitude: 76.4155, offer: "5% cashback on fuel", category: "gas_station" },
-      { name: "Park D", latitude: 30.3480, longitude: 76.4170, offer: "Weekend entry free", category: "park" },
-    ];
+    let map, currentLocation, retryCount = 0, markers = [];
+    const mockOffers = {
+      restaurant: [{ name: "Restaurant A", offer: "10% off on meals" }],
+      cafe: [{ name: "Cafe B", offer: "Free coffee with snacks" }],
+      gas_station: [{ name: "Gas Station C", offer: "5% cashback on fuel" }],
+      park: [{ name: "Park D", offer: "Weekend entry free" }],
+    };
 
     function initMap() {
       map = new google.maps.Map(document.getElementById("map"), {
         center: { lat: 28.6139, lng: 77.209 },
         zoom: 12,
       });
-      trafficLayer = new google.maps.TrafficLayer();
     }
 
     function getCurrentLocation() {
       if (navigator.geolocation) {
         navigator.geolocation.getCurrentPosition(
           (position) => {
+            retryCount = 0; // Reset retry count on success
             currentLocation = {
               lat: position.coords.latitude,
               lng: position.coords.longitude,
             };
-            document.getElementById("your-location").value = `${currentLocation.lat}, ${currentLocation.lng}`;
             map.setCenter(currentLocation);
-            new google.maps.Marker({
-              position: currentLocation,
-              map,
-              title: "Your Location",
-            });
+            addMarker(currentLocation, "Your Location");
           },
-          () => alert("Failed to fetch your location. Enable location services."),
-          { enableHighAccuracy: true }
+          (error) => {
+            if (retryCount < 3) {
+              retryCount++;
+              setTimeout(getCurrentLocation, 2000); // Retry after 2 seconds
+            } else {
+              alert("Failed to fetch location. Please try again.");
+            }
+          },
+          { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
         );
-      } else alert("Geolocation not supported by your browser.");
+      } else {
+        alert("Geolocation is not supported by your browser.");
+      }
     }
 
     function findNearbyPlaces() {
       const category = document.getElementById("place-category").value;
-      const filteredShops = shopData.filter(
-        (shop) =>
-          shop.category === category &&
-          calculateDistance(shop.latitude, shop.longitude, currentLocation.lat, currentLocation.lng) <= 5
-      );
-      displayNearbyShops(filteredShops);
-    }
-
-    function displayNearbyShops(shops) {
-      const listContainer = document.getElementById("nearby-shops");
-      listContainer.innerHTML = ""; // Clear previous list
       clearMarkers(); // Clear previous markers
-      shops.forEach((shop) => {
-        createMarker(shop);
-        addShopToList(shop);
+      const offers = mockOffers[category] || [];
+      const offersList = document.getElementById("offers-list");
+      offersList.innerHTML = ""; // Clear previous offers
+
+      offers.forEach((offer) => {
+        addMarker({ lat: currentLocation.lat + 0.01, lng: currentLocation.lng + 0.01 }, offer.name);
+        const listItem = document.createElement("li");
+        listItem.textContent = `${offer.name} - ${offer.offer}`;
+        offersList.appendChild(listItem);
       });
     }
 
-    function addShopToList(shop) {
-      const listContainer = document.getElementById("nearby-shops");
-      const listItem = document.createElement("li");
-      listItem.textContent = `${shop.name} - ${shop.offer}`;
-      listContainer.appendChild(listItem);
-    }
-
-    function createMarker(shop) {
+    function addMarker(position, title) {
       const marker = new google.maps.Marker({
-        position: { lat: shop.latitude, lng: shop.longitude },
-        map: map,
-        title: `${shop.name} - ${shop.offer}`,
+        position,
+        map,
+        title,
       });
-
-      const infoWindow = new google.maps.InfoWindow({
-        content: `<div><strong>${shop.name}</strong><br>${shop.offer}</div>`,
-      });
-
-      marker.addListener("click", () => {
-        infoWindow.open(map, marker);
-      });
+      markers.push(marker);
     }
 
     function clearMarkers() {
-      const markers = document.querySelectorAll('.gm-style img'); 
-      markers.forEach((m) => m.parentNode.removeChild(m));
-    }
-
-    function calculateDistance(lat1, lng1, lat2, lng2) {
-      const R = 6371; // Earth's radius in km
-      const dLat = (lat2 - lat1) * (Math.PI / 180);
-      const dLng = (lng2 - lng1) * (Math.PI / 180);
-      const a =
-        Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-        Math.cos(lat1 * (Math.PI / 180)) * Math.cos(lat2 * (Math.PI / 180)) *
-        Math.sin(dLng / 2) * Math.sin(dLng / 2);
-      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-      return R * c;
+      markers.forEach((marker) => marker.setMap(null));
+      markers = [];
     }
   </script>
 </body>
