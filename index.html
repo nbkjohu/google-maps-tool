@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Enhanced Google Maps with Advanced Features</title>
+  <title>Google Maps with Advanced Features</title>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -11,13 +11,11 @@
       padding: 20px;
       text-align: center;
     }
-
     #map {
       height: 500px;
       width: 100%;
       margin: 20px 0;
     }
-
     button {
       background-color: #4CAF50;
       color: white;
@@ -26,21 +24,17 @@
       margin: 5px;
       cursor: pointer;
     }
-
     button:hover {
       background-color: #45a049;
     }
-
     select, input {
       padding: 10px;
       margin: 5px;
     }
-
     ul {
       list-style: none;
       padding: 0;
     }
-
     ul li {
       margin: 5px 0;
       padding: 10px;
@@ -51,10 +45,10 @@
   </style>
 </head>
 <body>
-  <h1>Enhanced Google Maps with Advanced Features</h1>
+  <h1>Google Maps with Advanced Features</h1>
 
   <div>
-    <input id="your-location" placeholder="Your location" readonly>
+    <input id="your-location" placeholder="Your location">
     <button onclick="getCurrentLocation()">Get Live Location</button>
     <br><br>
     <input id="destination" placeholder="Destination">
@@ -83,7 +77,7 @@
   <div id="map"></div>
 
   <script>
-    let map, directionsService, directionsRenderer, currentLocation;
+    let map, autocompleteYourLocation, autocompleteDestination, directionsService, directionsRenderer, currentLocation;
     const favoriteLocations = JSON.parse(localStorage.getItem('favorites')) || [];
 
     function initMap() {
@@ -94,6 +88,30 @@
         zoom: 12,
       });
       directionsRenderer.setMap(map);
+
+      // Autocomplete for input fields
+      autocompleteYourLocation = new google.maps.places.Autocomplete(document.getElementById('your-location'));
+      autocompleteDestination = new google.maps.places.Autocomplete(document.getElementById('destination'));
+
+      // Listener for your-location
+      autocompleteYourLocation.addListener('place_changed', () => {
+        const place = autocompleteYourLocation.getPlace();
+        if (place.geometry) {
+          currentLocation = place.geometry.location;
+          map.setCenter(currentLocation);
+        } else {
+          alert('No details available for the selected location.');
+        }
+      });
+
+      // Listener for destination
+      autocompleteDestination.addListener('place_changed', () => {
+        const place = autocompleteDestination.getPlace();
+        if (!place.geometry) {
+          alert('No details available for the selected location.');
+        }
+      });
+
       displayFavorites();
     }
 
@@ -113,11 +131,10 @@
               title: 'Your Live Location',
             });
           },
-          (error) => {
-            alert('Error fetching location. Please enable GPS or try again later.');
-            console.error('Geolocation error:', error);
+          () => {
+            alert('Failed to fetch your location. Please enable location services.');
           },
-          { enableHighAccuracy: true, timeout: 10000 }
+          { enableHighAccuracy: true }
         );
       } else {
         alert('Geolocation is not supported by your browser.');
@@ -125,6 +142,7 @@
     }
 
     function getDirections() {
+      const origin = document.getElementById('your-location').value;
       const destination = document.getElementById('destination').value;
       const mode = document.getElementById('mode').value;
 
@@ -134,7 +152,7 @@
       }
 
       const request = {
-        origin: currentLocation,
+        origin: origin,
         destination: destination,
         travelMode: google.maps.TravelMode[mode],
       };
@@ -142,8 +160,6 @@
       directionsService.route(request, (result, status) => {
         if (status === 'OK') {
           directionsRenderer.setDirections(result);
-          const route = result.routes[0].legs[0];
-          alert(`Distance: ${route.distance.text}, Duration: ${route.duration.text}`);
         } else {
           alert('Could not get directions: ' + status);
         }
