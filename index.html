@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Google Maps with Advanced Features</title>
+  <title>Google Maps with Enhanced Features</title>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -45,7 +45,7 @@
   </style>
 </head>
 <body>
-  <h1>Google Maps with Advanced Features</h1>
+  <h1>Google Maps with Enhanced Features</h1>
 
   <div>
     <input id="your-location" placeholder="Your location">
@@ -77,7 +77,8 @@
   <div id="map"></div>
 
   <script>
-    let map, autocompleteYourLocation, autocompleteDestination, directionsService, directionsRenderer, currentLocation;
+    let map, directionsService, directionsRenderer, currentLocation;
+    let markers = []; // Array to store markers
     const favoriteLocations = JSON.parse(localStorage.getItem('favorites')) || [];
 
     function initMap() {
@@ -89,28 +90,9 @@
       });
       directionsRenderer.setMap(map);
 
-      // Autocomplete for input fields
-      autocompleteYourLocation = new google.maps.places.Autocomplete(document.getElementById('your-location'));
-      autocompleteDestination = new google.maps.places.Autocomplete(document.getElementById('destination'));
-
-      // Listener for your-location
-      autocompleteYourLocation.addListener('place_changed', () => {
-        const place = autocompleteYourLocation.getPlace();
-        if (place.geometry) {
-          currentLocation = place.geometry.location;
-          map.setCenter(currentLocation);
-        } else {
-          alert('No details available for the selected location.');
-        }
-      });
-
-      // Listener for destination
-      autocompleteDestination.addListener('place_changed', () => {
-        const place = autocompleteDestination.getPlace();
-        if (!place.geometry) {
-          alert('No details available for the selected location.');
-        }
-      });
+      // Autocomplete for inputs
+      new google.maps.places.Autocomplete(document.getElementById('your-location'));
+      new google.maps.places.Autocomplete(document.getElementById('destination'));
 
       displayFavorites();
     }
@@ -170,6 +152,9 @@
       const category = document.getElementById('place-category').value;
       const service = new google.maps.places.PlacesService(map);
 
+      // Clear existing markers
+      clearMarkers();
+
       service.nearbySearch(
         {
           location: currentLocation,
@@ -200,6 +185,14 @@
       marker.addListener('click', () => {
         infoWindow.open(map, marker);
       });
+
+      markers.push(marker); // Add marker to array
+    }
+
+    function clearMarkers() {
+      // Remove all existing markers from the map
+      markers.forEach(marker => marker.setMap(null));
+      markers = []; // Clear the array
     }
 
     function saveFavorite() {
