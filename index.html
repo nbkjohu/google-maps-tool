@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Google Maps with Enhanced Features</title>
+  <title>Offers Near You</title>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -17,7 +17,6 @@
       background-color: #4CAF50;
       color: white;
       padding: 20px 0;
-      margin-bottom: 20px;
     }
 
     header h1 {
@@ -30,7 +29,7 @@
       flex-wrap: wrap;
       justify-content: center;
       gap: 10px;
-      padding: 10px;
+      padding: 20px;
       background-color: white;
       border: 1px solid #ddd;
       border-radius: 10px;
@@ -45,13 +44,14 @@
       margin-bottom: 10px;
       border: 1px solid #ddd;
       border-radius: 5px;
-      box-sizing: border-box;
+      font-size: 16px;
     }
 
     button {
       background-color: #4CAF50;
       color: white;
       font-weight: bold;
+      cursor: pointer;
     }
 
     button:hover {
@@ -72,7 +72,7 @@
       width: 100%;
     }
 
-    .places-list {
+    .places-list, .favorites-list {
       margin: 20px auto;
       width: 90%;
       max-width: 800px;
@@ -81,10 +81,6 @@
       border: 1px solid #ddd;
       border-radius: 10px;
       text-align: left;
-    }
-
-    .places-list h3 {
-      margin-top: 0;
     }
 
     ul {
@@ -105,15 +101,13 @@
       padding: 10px;
       background-color: #4CAF50;
       color: white;
-      position: relative;
-      bottom: 0;
       width: 100%;
     }
   </style>
 </head>
 <body>
   <header>
-    <h1>Google Maps with Enhanced Features</h1>
+    <h1>Offers Near You</h1>
   </header>
 
   <div id="controls">
@@ -126,6 +120,13 @@
       <option value="gas_station">Gas Station</option>
       <option value="park">Park</option>
     </select>
+
+    <select id="radius-selector">
+      <option value="1000">1 km</option>
+      <option value="2000" selected>2 km</option>
+      <option value="5000">5 km</option>
+    </select>
+
     <button onclick="findNearbyPlaces()">Find Nearby Places</button>
   </div>
 
@@ -138,13 +139,18 @@
     <ul id="places-list"></ul>
   </div>
 
+  <div class="favorites-list">
+    <h3>Favorite Places</h3>
+    <ul id="favorites-list"></ul>
+  </div>
+
   <footer>
-    &copy; 2025 Google Maps Advanced Tool. All Rights Reserved.
+    &copy; 2025 Offers App. All Rights Reserved.
   </footer>
 
   <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCp2c5_T9vlA4a0bc1ANq-0sA13t86T024&libraries=places&callback=initMap" async defer></script>
   <script>
-    let map, currentLocation, placesService, markers = [];
+    let map, currentLocation, placesService, markers = [], favorites = [];
 
     function initMap() {
       map = new google.maps.Map(document.getElementById("map"), {
@@ -164,13 +170,10 @@
             };
             document.getElementById("your-location").value = `${currentLocation.lat}, ${currentLocation.lng}`;
             map.setCenter(currentLocation);
-            addMarker(currentLocation, "Your Location");
+            addMarker(currentLocation, "Your Location", "You are here");
           },
-          (error) => {
-            alert("Failed to fetch location. Please enable location services and try again.");
-            console.error("Geolocation Error:", error.message);
-          },
-          { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
+          (error) => alert("Failed to fetch location. Enable location services."),
+          { enableHighAccuracy: true }
         );
       } else {
         alert("Geolocation is not supported by your browser.");
@@ -179,6 +182,7 @@
 
     function findNearbyPlaces() {
       const category = document.getElementById("place-category").value;
+      const radius = parseInt(document.getElementById("radius-selector").value);
 
       if (!currentLocation) {
         alert("Please fetch your location first.");
@@ -190,29 +194,58 @@
       placesService.nearbySearch(
         {
           location: currentLocation,
-          radius: 2000,
+          radius,
           type: [category],
         },
         (results, status) => {
           if (status === google.maps.places.PlacesServiceStatus.OK) {
             updatePlacesList(results);
             results.forEach((place) => {
-              addMarker(place.geometry.location, place.name);
+              addMarker(place.geometry.location, place.name, place.vicinity);
             });
           } else {
-            alert("No places found for the selected category.");
+            alert("No places found in the selected category and radius.");
           }
         }
       );
     }
 
-    function addMarker(location, title) {
+    function addMarker(location, title, info) {
       const marker = new google.maps.Marker({
         position: location,
         map,
         title,
       });
+
       markers.push(marker);
+
+      const infoWindow = new google.maps.InfoWindow({
+        content: `<strong>${title}</strong><br>${info}`,
+      });
+
+      marker.addListener("click", () => {
+        infoWindow.open(map, marker);
+        const saveBtn = document.createElement("button");
+        saveBtn.textContent = "Save to Favorites";
+        saveBtn.onclick = () => saveToFavorites(title, info);
+        infoWindow.setContent(`<strong>${title}</strong><br>${info}<br>`);
+        infoWindow.open(map, marker);
+      });
+    }
+
+    function saveToFavorites(name, vicinity) {
+      favorites.push({ name, vicinity });
+      updateFavoritesList();
+    }
+
+    function updateFavoritesList() {
+      const favoritesList = document.getElementById("favorites-list");
+      favoritesList.innerHTML = "";
+      favorites.forEach((fav) => {
+        const listItem = document.createElement("li");
+        listItem.textContent = `${fav.name} - ${fav.vicinity}`;
+        favoritesList.appendChild(listItem);
+      });
     }
 
     function clearMarkers() {
