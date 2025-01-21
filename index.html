@@ -118,6 +118,14 @@
 
   <div id="controls">
     <button onclick="getCurrentLocation()">Get Live Location</button>
+    <select id="category-selector">
+      <option value="all">All Categories</option>
+      <option value="restaurant">Restaurants</option>
+      <option value="cafe">Cafes</option>
+      <option value="gas_station">Gas Stations</option>
+      <option value="park">Parks</option>
+    </select>
+    <button onclick="findNearbyOffers()">Search Nearby Offers</button>
   </div>
 
   <div id="map-container">
@@ -175,8 +183,12 @@
 
     function findNearbyOffers() {
       const radius = 2; // Radius in km
+      const selectedCategory = document.getElementById("category-selector").value;
       const offersList = document.getElementById("offers-list");
       offersList.innerHTML = "";
+
+      markers.forEach((marker) => marker.setMap(null)); // Clear existing markers
+      markers = [];
 
       shopData.forEach((shop) => {
         const distance = calculateDistance(
@@ -186,7 +198,7 @@
           shop.longitude
         );
 
-        if (distance <= radius) {
+        if ((selectedCategory === "all" || shop.category === selectedCategory) && distance <= radius) {
           addMarkerWithInfo(
             { lat: shop.latitude, lng: shop.longitude },
             shop.name,
