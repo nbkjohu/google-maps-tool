@@ -19,11 +19,6 @@
       padding: 20px 0;
     }
 
-    header h1 {
-      margin: 0;
-      font-size: 24px;
-    }
-
     #controls {
       display: flex;
       flex-wrap: wrap;
@@ -144,7 +139,7 @@
   </footer>
 
   <script>
-    let map, currentLocation;
+    let map, currentLocation, markers = [];
 
     // Initialize Google Map
     function initMap() {
@@ -167,11 +162,7 @@
             map.setCenter(currentLocation);
 
             // Add marker for current location
-            new google.maps.Marker({
-              position: currentLocation,
-              map,
-              title: "Your Location",
-            });
+            addMarker(currentLocation, "Your Location", "You are here");
           },
           () => alert("Failed to fetch location. Enable location services.")
         );
@@ -195,7 +186,7 @@
           `https://offers-backend-6u8p.onrender.com/api/nearbyplaces?location=${currentLocation.lat},${currentLocation.lng}&radius=${radius}&type=${type}`
         );
         const places = await response.json();
-        console.log("Fetched places:", places);
+        clearMarkers();
         updatePlacesList(places);
         addMarkers(places);
       } catch (error) {
@@ -209,9 +200,10 @@
       if (!map) return;
 
       places.forEach((place) => {
-        if (place.latitude && place.longitude) {
+        if (place.geometry && place.geometry.location) {
+          const { lat, lng } = place.geometry.location;
           const marker = new google.maps.Marker({
-            position: { lat: place.latitude, lng: place.longitude },
+            position: { lat, lng },
             map,
             title: place.name,
           });
@@ -223,10 +215,18 @@
           marker.addListener("click", () => {
             infoWindow.open(map, marker);
           });
+
+          markers.push(marker);
         } else {
           console.warn("Place is missing latitude or longitude:", place);
         }
       });
+    }
+
+    // Clear existing markers
+    function clearMarkers() {
+      markers.forEach((marker) => marker.setMap(null));
+      markers = [];
     }
 
     // Update the list of places
@@ -275,7 +275,7 @@
   </script>
 
   <script
-    src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCp2c5_T9vlA4a0bc1ANq-0sA13t86T024&callback=initMap"
+    src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCp2c5_T9vlA4a0bc1ANq-0sA13t86T024&callback=initMap&libraries=places"
     async
     defer
   ></script>
