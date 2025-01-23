@@ -193,8 +193,10 @@
 
       try {
         const response = await fetch(
-          `/api/nearbyplaces?location=${currentLocation.lat},${currentLocation.lng}&radius=${radius}&type=${category}`
+  "http://localhost:5000/api/nearbyplaces?location=" +
+    `${currentLocation.lat},${currentLocation.lng}&radius=${radius}&type=${category}`
         );
+
         const data = await response.json();
 
         if (response.ok) {
