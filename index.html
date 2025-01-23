@@ -178,7 +178,8 @@
 
     // Fetch nearby places from backend
   
-    async function fetchNearbyPlaces() {
+  // Fetch nearby places from backend
+  async function fetchNearbyPlaces() {
     const radius = document.getElementById("radius-selector").value;
     const type = document.getElementById("place-category").value;
   
@@ -194,27 +195,31 @@
       const places = await response.json();
       console.log("Fetched places:", places);
       updatePlacesList(places);
-      addMarkers(places);
+      addMarkers(places); // Add markers for valid places
     } catch (error) {
       console.error("Error fetching nearby places:", error);
       alert("An error occurred while fetching places.");
     }
   }
+
   
   // Add markers for fetched places
+  // Add markers for fetched places
   function addMarkers(places) {
+    if (!map) return;
+  
     places.forEach((place) => {
-      // Ensure latitude and longitude are extracted properly from place.geometry.location
+      // Extract latitude and longitude from geometry.location
       const location = place.geometry?.location;
-      if (location && location.lat && location.lng) {
-        const position = { lat: location.lat, lng: location.lng };
+      if (location && typeof location.lat === "function" && typeof location.lng === "function") {
+        const position = { lat: location.lat(), lng: location.lng() };
         const title = place.name;
         const info = place.offer || "No offer available";
   
         // Use addMarker function
         addMarker(position, title, info);
       } else {
-        console.warn("Place is missing latitude or longitude:", place);
+        console.warn("Place is missing valid latitude or longitude:", place);
       }
     });
   }
@@ -226,6 +231,15 @@
       map,
       title,
     });
+  
+    const infoWindow = new google.maps.InfoWindow({
+      content: `<strong>${title}</strong><br>${info}`,
+    });
+  
+    marker.addListener("click", () => {
+      infoWindow.open(map, marker);
+    });
+  }
 
   const infoWindow = new google.maps.InfoWindow({
     content: `<strong>${title}</strong><br>${info}`,
