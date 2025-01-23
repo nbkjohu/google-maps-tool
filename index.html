@@ -205,22 +205,33 @@
     }
 
     // Add markers for fetched places
+    // Add markers for fetched places
     function addMarkers(places) {
       if (!map) return;
-
+    
       places.forEach((place) => {
         const location = place.geometry?.location;
+    
+        // Check if latitude and longitude are available
         if (location && typeof location.lat === "function" && typeof location.lng === "function") {
           const position = { lat: location.lat(), lng: location.lng() };
           const title = place.name;
           const info = place.offer || "No offer available";
-
+    
+          addMarker(position, title, info);
+        } else if (location && location.lat && location.lng) {
+          // Handle case when lat/lng are directly available as numbers
+          const position = { lat: location.lat, lng: location.lng };
+          const title = place.name;
+          const info = place.offer || "No offer available";
+    
           addMarker(position, title, info);
         } else {
           console.warn("Place is missing valid latitude or longitude:", place);
         }
       });
     }
+
 
     // Add a single marker
     function addMarker(location, title, info) {
