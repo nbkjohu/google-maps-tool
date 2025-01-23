@@ -58,7 +58,7 @@
     
       try {
         const response = await fetch(
-          `https://your-render-backend-url/api/nearbyplaces?location=${currentLocation.lat},${currentLocation.lng}&radius=${radius}&type=${type}`
+          `https://offers-backend-6u8p.onrender.com/api/nearbyplaces?location=${currentLocation.lat},${currentLocation.lng}&radius=${radius}&type=${type}`
         );
         if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
     
