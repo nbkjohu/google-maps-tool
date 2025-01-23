@@ -19,6 +19,11 @@
       padding: 20px 0;
     }
 
+    header h1 {
+      margin: 0;
+      font-size: 24px;
+    }
+
     #controls {
       display: flex;
       flex-wrap: wrap;
@@ -186,7 +191,7 @@
           `https://offers-backend-6u8p.onrender.com/api/nearbyplaces?location=${currentLocation.lat},${currentLocation.lng}&radius=${radius}&type=${type}`
         );
         const places = await response.json();
-        clearMarkers();
+        console.log("Fetched places:", places);
         updatePlacesList(places);
         addMarkers(places);
       } catch (error) {
@@ -197,36 +202,37 @@
 
     // Add markers for fetched places
     function addMarkers(places) {
-      if (!map) return;
-
       places.forEach((place) => {
-        if (place.geometry && place.geometry.location) {
-          const { lat, lng } = place.geometry.location;
-          const marker = new google.maps.Marker({
-            position: { lat, lng },
-            map,
-            title: place.name,
-          });
+        if (place.latitude && place.longitude) {
+          const location = { lat: place.latitude, lng: place.longitude };
+          const title = place.name;
+          const info = place.offer || "No offer available";
 
-          const infoWindow = new google.maps.InfoWindow({
-            content: `<strong>${place.name}</strong><br>${place.offer || "No offer available"}`,
-          });
-
-          marker.addListener("click", () => {
-            infoWindow.open(map, marker);
-          });
-
-          markers.push(marker);
+          // Use addMarker function
+          addMarker(location, title, info);
         } else {
           console.warn("Place is missing latitude or longitude:", place);
         }
       });
     }
 
-    // Clear existing markers
-    function clearMarkers() {
-      markers.forEach((marker) => marker.setMap(null));
-      markers = [];
+    // Add a single marker
+    function addMarker(location, title, info) {
+      const marker = new google.maps.Marker({
+        position: location,
+        map,
+        title,
+      });
+
+      const infoWindow = new google.maps.InfoWindow({
+        content: `<strong>${title}</strong><br>${info}`,
+      });
+
+      marker.addListener("click", () => {
+        infoWindow.open(map, marker);
+      });
+
+      markers.push(marker);
     }
 
     // Update the list of places
@@ -275,7 +281,7 @@
   </script>
 
   <script
-    src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCp2c5_T9vlA4a0bc1ANq-0sA13t86T024&callback=initMap&libraries=places"
+    src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCp2c5_T9vlA4a0bc1ANq-0sA13t86T024&callback=initMap"
     async
     defer
   ></script>
