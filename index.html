@@ -183,38 +183,39 @@
 
     // Fetch nearby places using Google Places API
     async function fetchNearbyPlaces() {
-      const category = document.getElementById("place-category").value;
-      const radius = parseInt(document.getElementById("radius-selector").value);
+  const radius = parseInt(document.getElementById("radius-selector").value);
 
-      if (!currentLocation) {
-        alert("Please fetch your location first.");
-        return;
-      }
+  if (!currentLocation) {
+    alert("Please fetch your location first.");
+    return;
+  }
 
-      const apiKey = "AIzaSyCp2c5_T9vlA4a0bc1ANq-0sA13t86T024";
-      const endpoint = `https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=${currentLocation.lat},${currentLocation.lng}&radius=${radius}&type=${category}&key=${apiKey}`;
+  try {
+    const response = await fetch(
+      `http://localhost:5000/api/nearbyplaces?location=${currentLocation.lat},${currentLocation.lng}&radius=${radius}&type=${document.getElementById("place-category").value}`
+    );
+    const data = await response.json();
 
-      try {
-        const response = await fetch(endpoint);
-        const data = await response.json();
+    if (data.results && data.results.length > 0) {
+      clearMarkers();
+      updatePlacesList(data.results);
 
-        if (data.status === "OK") {
-          updatePlacesList(data.results);
-          data.results.forEach((place) => {
-            addMarker(
-              place.geometry.location,
-              place.name,
-              place.vicinity || "No address available"
-            );
-          });
-        } else {
-          alert("Failed to fetch nearby places. Status: " + data.status);
-        }
-      } catch (error) {
-        console.error("Error fetching nearby places:", error);
-        alert("An error occurred while fetching places.");
-      }
+      data.results.forEach((place) => {
+        addMarker(
+          { lat: place.geometry.location.lat, lng: place.geometry.location.lng },
+          place.name,
+          place.vicinity
+        );
+      });
+    } else {
+      alert("No nearby places found.");
     }
+  } catch (error) {
+    console.error("Error fetching nearby places:", error.message);
+    alert("An error occurred while fetching the places.");
+  }
+}
+
 
     // Add a marker to the map
     function addMarker(location, title, info) {
