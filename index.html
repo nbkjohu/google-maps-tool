@@ -205,48 +205,27 @@
     }
 
     // Add markers for fetched places
-    // Add markers for fetched places
     function addMarkers(places) {
       if (!map) return;
-    
+
       places.forEach((place) => {
-        const location = place.geometry?.location;
-    
-        // Check if latitude and longitude are available
-        if (location && typeof location.lat === "function" && typeof location.lng === "function") {
-          const position = { lat: location.lat(), lng: location.lng() };
-          const title = place.name;
-          const info = place.offer || "No offer available";
-    
-          addMarker(position, title, info);
-        } else if (location && location.lat && location.lng) {
-          // Handle case when lat/lng are directly available as numbers
-          const position = { lat: location.lat, lng: location.lng };
-          const title = place.name;
-          const info = place.offer || "No offer available";
-    
-          addMarker(position, title, info);
+        if (place.geometry && place.geometry.location) {
+          const marker = new google.maps.Marker({
+            position: { lat: place.geometry.location.lat, lng: place.geometry.location.lng },
+            map,
+            title: place.name,
+          });
+
+          const infoWindow = new google.maps.InfoWindow({
+            content: `<strong>${place.name}</strong><br>${place.offer || "No offer available"}`,
+          });
+
+          marker.addListener("click", () => {
+            infoWindow.open(map, marker);
+          });
         } else {
           console.warn("Place is missing valid latitude or longitude:", place);
         }
-      });
-    }
-
-
-    // Add a single marker
-    function addMarker(location, title, info) {
-      const marker = new google.maps.Marker({
-        position: location,
-        map,
-        title,
-      });
-
-      const infoWindow = new google.maps.InfoWindow({
-        content: `<strong>${title}</strong><br>${info}`,
-      });
-
-      marker.addListener("click", () => {
-        infoWindow.open(map, marker);
       });
     }
 
@@ -259,8 +238,8 @@
         const listItem = document.createElement("li");
         listItem.innerHTML = `
           <strong>${place.name}</strong> - ${place.offer || "No offer available"}
-          <input type="text" placeholder="Add/Update Offer" id="offer-${place.placeId}" />
-          <button onclick="updateOffer('${place.placeId}', 'offer-${place.placeId}')">Update Offer</button>
+          <input type="text" placeholder="Add/Update Offer" id="offer-${place.place_id}" />
+          <button onclick="updateOffer('${place.place_id}', 'offer-${place.place_id}')">Update Offer</button>
         `;
         placesList.appendChild(listItem);
       });
@@ -296,7 +275,7 @@
   </script>
 
   <script
-    src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCp2c5_T9vlA4a0bc1ANq-0sA13t86T024&libraries=places&callback=initMap"
+    src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCp2c5_T9vlA4a0bc1ANq-0sA13t86T024&callback=initMap"
     async
     defer
   ></script>
