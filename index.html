@@ -132,8 +132,8 @@
   </footer>
 
   <script>
-    const backendUrl = "https://offers-backend-6u8p.onrender.com";
-    let map, currentLocation;
+    const backendUrl = "https://offers-backend-6u8p.onrender.com"; // Backend URL
+    let map, currentLocation, markers = [];
 
     function initMap() {
       map = new google.maps.Map(document.getElementById("map"), {
@@ -174,11 +174,38 @@
           `${backendUrl}/api/nearbyplaces?location=${currentLocation.lat},${currentLocation.lng}&radius=${radius}&type=${type}`
         );
         const places = await response.json();
+        clearMarkers();
         updatePlacesList(places);
+        addMarkersToMap(places);
       } catch (error) {
         console.error("Error fetching nearby places:", error);
         alert("An error occurred while fetching places.");
       }
+    }
+
+    function addMarkersToMap(places) {
+      places.forEach((place) => {
+        const marker = new google.maps.Marker({
+          position: { lat: place.latitude, lng: place.longitude },
+          map,
+          title: place.name,
+        });
+
+        const infoWindow = new google.maps.InfoWindow({
+          content: `<strong>${place.name}</strong><br>${place.offer || "No offer available"}`,
+        });
+
+        marker.addListener("click", () => {
+          infoWindow.open(map, marker);
+        });
+
+        markers.push(marker);
+      });
+    }
+
+    function clearMarkers() {
+      markers.forEach((marker) => marker.setMap(null));
+      markers = [];
     }
 
     async function updateOffer(placeId, inputId) {
