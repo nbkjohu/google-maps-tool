@@ -12,18 +12,15 @@
       text-align: center;
       background-color: #f9f9f9;
     }
-
     header {
       background-color: #4CAF50;
       color: white;
       padding: 20px 0;
     }
-
     header h1 {
       margin: 0;
       font-size: 24px;
     }
-
     #controls {
       display: flex;
       flex-wrap: wrap;
@@ -37,7 +34,6 @@
       width: 90%;
       max-width: 800px;
     }
-
     input, select, button {
       width: 100%;
       padding: 10px;
@@ -46,18 +42,15 @@
       border-radius: 5px;
       font-size: 16px;
     }
-
     button {
       background-color: #4CAF50;
       color: white;
       font-weight: bold;
       cursor: pointer;
     }
-
     button:hover {
       background-color: #45a049;
     }
-
     #map-container {
       margin: 20px auto;
       width: 90%;
@@ -66,13 +59,11 @@
       border-radius: 10px;
       overflow: hidden;
     }
-
     #map {
       height: 500px;
       width: 100%;
     }
-
-    .places-list, .favorites-list {
+    .places-list {
       margin: 20px auto;
       width: 90%;
       max-width: 800px;
@@ -82,12 +73,10 @@
       border-radius: 10px;
       text-align: left;
     }
-
     ul {
       list-style: none;
       padding: 0;
     }
-
     ul li {
       padding: 10px;
       background: #f4f4f4;
@@ -95,7 +84,6 @@
       margin: 5px 0;
       border-radius: 5px;
     }
-
     footer {
       text-align: center;
       padding: 10px;
@@ -111,7 +99,7 @@
   </header>
 
   <div id="controls">
-    <input id="your-location" placeholder="Your location" readonly>
+    <input id="your-location" placeholder="Your location" readonly />
     <button onclick="getCurrentLocation()">Get Live Location</button>
 
     <select id="place-category">
@@ -127,7 +115,7 @@
       <option value="5000">5 km</option>
     </select>
 
-    <button onclick="fetchNearbyPlaces()">Find Nearby Offers</button>
+    <button onclick="fetchNearbyPlaces()">Find Nearby Places</button>
   </div>
 
   <div id="map-container">
@@ -139,20 +127,14 @@
     <ul id="places-list"></ul>
   </div>
 
-  <div class="favorites-list">
-    <h3>Favorite Places</h3>
-    <ul id="favorites-list"></ul>
-  </div>
-
   <footer>
     &copy; 2025 Offers App. All Rights Reserved.
   </footer>
 
-  <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCp2c5_T9vlA4a0bc1ANq-0sA13t86T024&libraries=places&callback=initMap" async defer></script>
   <script>
-    let map, currentLocation, markers = [], favorites = [];
+    const backendUrl = "https://offers-backend-6u8p.onrender.com";
+    let map, currentLocation;
 
-    // Initialize Google Maps
     function initMap() {
       map = new google.maps.Map(document.getElementById("map"), {
         center: { lat: 28.6139, lng: 77.209 },
@@ -160,7 +142,6 @@
       });
     }
 
-    // Get user's current location
     function getCurrentLocation() {
       if (navigator.geolocation) {
         navigator.geolocation.getCurrentPosition(
@@ -171,20 +152,17 @@
             };
             document.getElementById("your-location").value = `${currentLocation.lat}, ${currentLocation.lng}`;
             map.setCenter(currentLocation);
-            addMarker(currentLocation, "Your Location", "You are here");
           },
-          (error) => alert("Failed to fetch location. Enable location services."),
-          { enableHighAccuracy: true }
+          () => alert("Failed to fetch location. Enable location services.")
         );
       } else {
         alert("Geolocation is not supported by your browser.");
       }
     }
 
-    // Fetch nearby places from the backend API
     async function fetchNearbyPlaces() {
-      const radius = parseInt(document.getElementById("radius-selector").value);
-      const category = document.getElementById("place-category").value;
+      const radius = document.getElementById("radius-selector").value;
+      const type = document.getElementById("place-category").value;
 
       if (!currentLocation) {
         alert("Please fetch your location first.");
@@ -193,87 +171,63 @@
 
       try {
         const response = await fetch(
-  "http://localhost:5000/api/nearbyplaces?location=" +
-    `${currentLocation.lat},${currentLocation.lng}&radius=${radius}&type=${category}`
+          `${backendUrl}/api/nearbyplaces?location=${currentLocation.lat},${currentLocation.lng}&radius=${radius}&type=${type}`
         );
-
-        const data = await response.json();
-
-        if (response.ok) {
-          clearMarkers(); // Clear existing markers before adding new ones
-
-          data.results.forEach((place) => {
-            addMarker(
-              { lat: place.geometry.location.lat, lng: place.geometry.location.lng },
-              place.name,
-              place.vicinity
-            );
-          });
-
-          updatePlacesList(data.results); // Update the list of places
-        } else {
-          console.error("Error fetching nearby places:", data.error);
-          alert("An error occurred while fetching the places.");
-        }
+        const places = await response.json();
+        updatePlacesList(places);
       } catch (error) {
         console.error("Error fetching nearby places:", error);
-        alert("An error occurred while fetching the places.");
+        alert("An error occurred while fetching places.");
       }
     }
 
-    // Add a marker on the map
-    function addMarker(location, title, info) {
-      const marker = new google.maps.Marker({
-        position: location,
-        map,
-        title,
-      });
+    async function updateOffer(placeId, inputId) {
+      const offer = document.getElementById(inputId).value;
 
-      markers.push(marker);
+      if (!offer) {
+        alert("Please enter an offer!");
+        return;
+      }
 
-      const infoWindow = new google.maps.InfoWindow({
-        content: `<strong>${title}</strong><br>${info}`,
-      });
+      try {
+        const response = await fetch(`${backendUrl}/api/updateOffer`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ placeId, offer }),
+        });
 
-      marker.addListener("click", () => {
-        infoWindow.open(map, marker);
-        saveToFavorites(title, info);
-      });
+        if (response.ok) {
+          alert("Offer updated successfully!");
+        } else {
+          alert("Failed to update the offer.");
+        }
+      } catch (error) {
+        console.error("Error updating offer:", error);
+      }
     }
 
-    // Save place to favorites
-    function saveToFavorites(name, info) {
-      favorites.push({ name, info });
-      updateFavoritesList();
-    }
-
-    // Update the favorites list
-    function updateFavoritesList() {
-      const favoritesList = document.getElementById("favorites-list");
-      favoritesList.innerHTML = "";
-      favorites.forEach((fav) => {
-        const listItem = document.createElement("li");
-        listItem.textContent = `${fav.name} - ${fav.info}`;
-        favoritesList.appendChild(listItem);
-      });
-    }
-
-    // Clear all markers on the map
-    function clearMarkers() {
-      markers.forEach((marker) => marker.setMap(null));
-      markers = [];
-    }
-
-    // Update the places list
     function updatePlacesList(places) {
       const placesList = document.getElementById("places-list");
       placesList.innerHTML = "";
+
       places.forEach((place) => {
         const listItem = document.createElement("li");
-        listItem.textContent = `${place.name} - ${place.vicinity}`;
+        listItem.innerHTML = `
+          <strong>${place.name}</strong> - ${place.offer || "No offer available"}
+          <input type="text" placeholder="Add/Update Offer" id="offer-${place.placeId}" />
+          <button onclick="updateOffer('${place.placeId}', 'offer-${place.placeId}')">Update Offer</button>
+        `;
         placesList.appendChild(listItem);
       });
     }
   </script>
+
+  <script
+    src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCp2c5_T9vlA4a0bc1ANq-0sA13t86T024&callback=initMap"
+    async
+    defer
+  ></script>
 </body>
 </html>
