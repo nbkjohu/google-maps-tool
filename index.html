@@ -187,10 +187,11 @@
       }
 
       try {
-        const response = await fetch("http://localhost:5000/api/shops");
+        const response = await fetch("https://offers-backend-6u8p.onrender.com/api/shops");
         const shops = await response.json();
-        clearMarkers();
-        updateShopList(shops);
+        clearMarkers(); // Clear existing markers
+        updateShopList(shops); // Update shop list
+
         shops.forEach((shop) => {
           const distance = calculateDistance(
             currentLocation.lat,
@@ -199,6 +200,7 @@
             shop.longitude
           );
           if (distance <= radius / 1000) {
+            // Add marker for the shop
             addMarker(
               { lat: shop.latitude, lng: shop.longitude },
               shop.name,
