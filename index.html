@@ -115,14 +115,11 @@
     <button onclick="getCurrentLocation()">Get Live Location</button>
 
     <select id="place-category">
-    <option value="restaurant">Restaurant</option>
-    <option value="cafe">Cafe</option>
-    <option value="gas_station">Gas Station</option>
-    <option value="park">Park</option>
-    <option value="supermarket">Supermarket</option>
-    <option value="gym">Gym</option>
+      <option value="restaurant">Restaurant</option>
+      <option value="cafe">Cafe</option>
+      <option value="gas_station">Gas Station</option>
+      <option value="park">Park</option>
     </select>
-
 
     <select id="radius-selector">
       <option value="1000">1 km</option>
@@ -184,48 +181,38 @@
     }
 
     // Fetch nearby places from backend
-  async function fetchNearbyPlaces() {
-  const radius = document.getElementById("radius-selector").value;
-  const type = document.getElementById("place-category").value;
+    async function fetchNearbyPlaces() {
+      const radius = document.getElementById("radius-selector").value;
+      const type = document.getElementById("place-category").value;
 
-  if (!currentLocation) {
-    alert("Please fetch your location first.");
-    return;
-  }
+      if (!currentLocation) {
+        alert("Please fetch your location first.");
+        return;
+      }
 
-  try {
-    const response = await fetch(
-      `https://offers-backend-6u8p.onrender.com/api/nearbyplaces?location=${currentLocation.lat},${currentLocation.lng}&radius=${radius}&type=${type}`
-    );
-
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
+      try {
+        const response = await fetch(
+          `https://offers-backend-6u8p.onrender.com/api/nearbyplaces?location=${currentLocation.lat},${currentLocation.lng}&radius=${radius}&type=${type}`
+        );
+        const places = await response.json();
+        console.log("Fetched places:", places);
+        updatePlacesList(places);
+        addMarkers(places);
+      } catch (error) {
+        console.error("Error fetching nearby places:", error);
+        alert("An error occurred while fetching places.");
+      }
     }
-
-    const places = await response.json();
-    if (!places || places.length === 0) {
-      alert("No nearby places found.");
-      return;
-    }
-
-    updatePlacesList(places);
-    addMarkers(places);
-  } catch (error) {
-    console.error("Error fetching nearby places:", error);
-    alert("An error occurred while fetching places.");
-  }
-}
-
-
 
     // Add markers for fetched places
     function addMarkers(places) {
       if (!map) return;
 
       places.forEach((place) => {
-        if (place.geometry && place.geometry.location) {
+        // Check for valid latitude and longitude
+        if (typeof place.latitude === "number" && typeof place.longitude === "number") {
           const marker = new google.maps.Marker({
-            position: { lat: place.geometry.location.lat, lng: place.geometry.location.lng },
+            position: { lat: place.latitude, lng: place.longitude },
             map,
             title: place.name,
           });
@@ -252,8 +239,8 @@
         const listItem = document.createElement("li");
         listItem.innerHTML = `
           <strong>${place.name}</strong> - ${place.offer || "No offer available"}
-          <input type="text" placeholder="Add/Update Offer" id="offer-${place.place_id}" />
-          <button onclick="updateOffer('${place.place_id}', 'offer-${place.place_id}')">Update Offer</button>
+          <input type="text" placeholder="Add/Update Offer" id="offer-${place.placeId}" />
+          <button onclick="updateOffer('${place.placeId}', 'offer-${place.placeId}')">Update Offer</button>
         `;
         placesList.appendChild(listItem);
       });
@@ -262,24 +249,21 @@
     // Update offer for a specific place
     async function updateOffer(placeId, inputId) {
       const offer = document.getElementById(inputId).value;
-    
+
       if (!offer) {
         alert("Please enter an offer!");
         return;
       }
-    
+
       try {
-        const response = await fetch(
-          "https://offers-backend-6u8p.onrender.com/api/updateOffer",
-          {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({ placeId, offer }),
-          }
-        );
-    
+        const response = await fetch("https://offers-backend-6u8p.onrender.com/api/updateOffer", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ placeId, offer }),
+        });
+
         if (response.ok) {
           alert("Offer updated successfully!");
         } else {
@@ -289,8 +273,6 @@
         console.error("Error updating offer:", error);
       }
     }
-
-
   </script>
 
   <script
