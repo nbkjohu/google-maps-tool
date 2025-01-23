@@ -252,12 +252,12 @@
     // Update offer for a specific place
     async function updateOffer(placeId, inputId) {
       const offer = document.getElementById(inputId).value;
-
+    
       if (!offer) {
         alert("Please enter an offer!");
         return;
       }
-
+    
       try {
         const response = await fetch("https://offers-backend-6u8p.onrender.com/api/updateOffer", {
           method: "POST",
@@ -266,7 +266,7 @@
           },
           body: JSON.stringify({ placeId, offer }),
         });
-
+    
         if (response.ok) {
           alert("Offer updated successfully!");
         } else {
@@ -276,6 +276,7 @@
         console.error("Error updating offer:", error);
       }
     }
+
   </script>
 
   <script
