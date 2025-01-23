@@ -127,7 +127,7 @@
       <option value="5000">5 km</option>
     </select>
 
-    <button onclick="findNearbyPlaces()">Find Nearby Places</button>
+    <button onclick="fetchShopOffers()">Find Nearby Offers</button>
   </div>
 
   <div id="map-container">
@@ -150,14 +150,13 @@
 
   <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCp2c5_T9vlA4a0bc1ANq-0sA13t86T024&libraries=places&callback=initMap" async defer></script>
   <script>
-    let map, currentLocation, placesService, markers = [], favorites = [];
+    let map, currentLocation, markers = [], favorites = [];
 
     function initMap() {
       map = new google.maps.Map(document.getElementById("map"), {
         center: { lat: 28.6139, lng: 77.209 },
         zoom: 12,
       });
-      placesService = new google.maps.places.PlacesService(map);
     }
 
     function getCurrentLocation() {
@@ -180,34 +179,37 @@
       }
     }
 
-    function findNearbyPlaces() {
-      const category = document.getElementById("place-category").value;
+    async function fetchShopOffers() {
       const radius = parseInt(document.getElementById("radius-selector").value);
-
       if (!currentLocation) {
         alert("Please fetch your location first.");
         return;
       }
 
-      clearMarkers();
-
-      placesService.nearbySearch(
-        {
-          location: currentLocation,
-          radius,
-          type: [category],
-        },
-        (results, status) => {
-          if (status === google.maps.places.PlacesServiceStatus.OK) {
-            updatePlacesList(results);
-            results.forEach((place) => {
-              addMarker(place.geometry.location, place.name, place.vicinity);
-            });
-          } else {
-            alert("No places found in the selected category and radius.");
+      try {
+        const response = await fetch("https://your-backend-url/api/shops");
+        const shops = await response.json();
+        clearMarkers();
+        updateShopList(shops);
+        shops.forEach((shop) => {
+          const distance = calculateDistance(
+            currentLocation.lat,
+            currentLocation.lng,
+            shop.latitude,
+            shop.longitude
+          );
+          if (distance <= radius / 1000) {
+            addMarker(
+              { lat: shop.latitude, lng: shop.longitude },
+              shop.name,
+              shop.offer
+            );
           }
-        }
-      );
+        });
+      } catch (error) {
+        console.error("Error fetching shops:", error);
+        alert("Failed to fetch shops.");
+      }
     }
 
     function addMarker(location, title, info) {
@@ -225,16 +227,12 @@
 
       marker.addListener("click", () => {
         infoWindow.open(map, marker);
-        const saveBtn = document.createElement("button");
-        saveBtn.textContent = "Save to Favorites";
-        saveBtn.onclick = () => saveToFavorites(title, info);
-        infoWindow.setContent(`<strong>${title}</strong><br>${info}<br>`);
-        infoWindow.open(map, marker);
+        saveToFavorites(title, info);
       });
     }
 
-    function saveToFavorites(name, vicinity) {
-      favorites.push({ name, vicinity });
+    function saveToFavorites(name, info) {
+      favorites.push({ name, info });
       updateFavoritesList();
     }
 
@@ -243,7 +241,7 @@
       favoritesList.innerHTML = "";
       favorites.forEach((fav) => {
         const listItem = document.createElement("li");
-        listItem.textContent = `${fav.name} - ${fav.vicinity}`;
+        listItem.textContent = `${fav.name} - ${fav.info}`;
         favoritesList.appendChild(listItem);
       });
     }
@@ -253,14 +251,32 @@
       markers = [];
     }
 
-    function updatePlacesList(places) {
+    function updateShopList(shops) {
       const placesList = document.getElementById("places-list");
       placesList.innerHTML = "";
-      places.forEach((place) => {
+      shops.forEach((shop) => {
         const listItem = document.createElement("li");
-        listItem.textContent = `${place.name} - ${place.vicinity}`;
+        listItem.textContent = `${shop.name} - ${shop.offer}`;
         placesList.appendChild(listItem);
       });
+    }
+
+    function calculateDistance(lat1, lng1, lat2, lng2) {
+      const R = 6371; // Radius of the earth in km
+      const dLat = deg2rad(lat2 - lat1);
+      const dLng = deg2rad(lng2 - lng1);
+      const a =
+        Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+        Math.cos(deg2rad(lat1)) *
+          Math.cos(deg2rad(lat2)) *
+          Math.sin(dLng / 2) *
+          Math.sin(dLng / 2);
+      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+      return R * c; // Distance in km
+    }
+
+    function deg2rad(deg) {
+      return deg * (Math.PI / 180);
     }
   </script>
 </body>
