@@ -187,7 +187,7 @@
       }
 
       try {
-        const response = await fetch("https://offers-backend-6u8p.onrender.com/api/shops");
+        const response = await fetch("http://localhost:5000/api/shops");
         const shops = await response.json();
         clearMarkers();
         updateShopList(shops);
