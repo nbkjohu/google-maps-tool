@@ -177,52 +177,66 @@
     }
 
     // Fetch nearby places from backend
+  
     async function fetchNearbyPlaces() {
-      const radius = document.getElementById("radius-selector").value;
-      const type = document.getElementById("place-category").value;
-
-      if (!currentLocation) {
-        alert("Please fetch your location first.");
-        return;
-      }
-
-      try {
-        const response = await fetch(
-          `https://offers-backend-6u8p.onrender.com/api/nearbyplaces?location=${currentLocation.lat},${currentLocation.lng}&radius=${radius}&type=${type}`
-        );
-        const places = await response.json();
-        console.log("Fetched places:", places);
-        updatePlacesList(places);
-        addMarkers(places);
-      } catch (error) {
-        console.error("Error fetching nearby places:", error);
-        alert("An error occurred while fetching places.");
-      }
+    const radius = document.getElementById("radius-selector").value;
+    const type = document.getElementById("place-category").value;
+  
+    if (!currentLocation) {
+      alert("Please fetch your location first.");
+      return;
     }
-
-    // Add markers for fetched places
-    function addMarkers(places) {
-      places.forEach((place) => {
-        if (place.latitude && place.longitude) {
-          const location = { lat: place.latitude, lng: place.longitude };
-          const title = place.name;
-          const info = place.offer || "No offer available";
-
-          // Use addMarker function
-          addMarker(location, title, info);
-        } else {
-          console.warn("Place is missing latitude or longitude:", place);
-        }
-      });
+  
+    try {
+      const response = await fetch(
+        `https://offers-backend-6u8p.onrender.com/api/nearbyplaces?location=${currentLocation.lat},${currentLocation.lng}&radius=${radius}&type=${type}`
+      );
+      const places = await response.json();
+      console.log("Fetched places:", places);
+      updatePlacesList(places);
+      addMarkers(places);
+    } catch (error) {
+      console.error("Error fetching nearby places:", error);
+      alert("An error occurred while fetching places.");
     }
+  }
+  
+  // Add markers for fetched places
+  function addMarkers(places) {
+    places.forEach((place) => {
+      // Ensure latitude and longitude are extracted properly from place.geometry.location
+      const location = place.geometry?.location;
+      if (location && location.lat && location.lng) {
+        const position = { lat: location.lat, lng: location.lng };
+        const title = place.name;
+        const info = place.offer || "No offer available";
+  
+        // Use addMarker function
+        addMarker(position, title, info);
+      } else {
+        console.warn("Place is missing latitude or longitude:", place);
+      }
+    });
+  }
+  
+  // Add a single marker
+  function addMarker(location, title, info) {
+    const marker = new google.maps.Marker({
+      position: location,
+      map,
+      title,
+    });
 
-    // Add a single marker
-    function addMarker(location, title, info) {
-      const marker = new google.maps.Marker({
-        position: location,
-        map,
-        title,
-      });
+  const infoWindow = new google.maps.InfoWindow({
+    content: `<strong>${title}</strong><br>${info}`,
+  });
+
+  marker.addListener("click", () => {
+    infoWindow.open(map, marker);
+  });
+
+  markers.push(marker);
+}
 
       const infoWindow = new google.maps.InfoWindow({
         content: `<strong>${title}</strong><br>${info}`,
