@@ -181,8 +181,25 @@
     }
 
     // Fetch nearby places
-async function fetchNearbyPlaces() {
+    
+    async function fetchNearbyPlaces() {
   try {
+    // Ensure current location is available
+    if (!currentLocation) {
+      alert("Please fetch your location first.");
+      return;
+    }
+
+    // Get the radius and type from the selectors
+    const radiusSelector = document.getElementById("radius-selector");
+    const radius = radiusSelector ? radiusSelector.value : 2000; // Default to 2000 meters if not found
+
+    const typeSelector = document.getElementById("place-category");
+    const type = typeSelector ? typeSelector.value : "restaurant"; // Default to 'restaurant' if not found
+
+    console.log("Fetching nearby places with:", { radius, type, location: currentLocation });
+
+    // Make API call to fetch nearby places
     const response = await fetch(
       `https://offers-backend-6u8p.onrender.com/api/nearbyplaces?location=${currentLocation.lat},${currentLocation.lng}&radius=${radius}&type=${type}`
     );
@@ -193,44 +210,16 @@ async function fetchNearbyPlaces() {
 
     const places = await response.json();
     console.log("Fetched places:", places);
+
+    // Update the UI with the fetched places
     updatePlacesList(places);
     addMarkers(places);
   } catch (error) {
     console.error("Error fetching nearby places:", error.message);
-    alert("An error occurred while fetching places.");
+    alert("An error occurred while fetching nearby places.");
   }
 }
 
-    // Update offer for a specific place
-    async function updateOffer(placeId, inputId) {
-      try {
-        const offer = document.getElementById(inputId).value;
-    
-        if (!offer) {
-          alert("Please enter an offer!");
-          return;
-        }
-    
-        const response = await fetch("https://offers-backend-6u8p.onrender.com/api/updateOffer", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ placeId, offer }),
-        });
-    
-        if (!response.ok) {
-          throw new Error("Failed to update the offer");
-        }
-    
-        const result = await response.json();
-        console.log("Offer updated:", result);
-        alert("Offer updated successfully!");
-      } catch (error) {
-        console.error("Error updating offer:", error.message);
-        alert("An error occurred while updating the offer.");
-      }
-    }
-
-    // Add markers for fetched places
     function addMarkers(places) {
       if (!map) return;
 
