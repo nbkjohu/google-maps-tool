@@ -152,15 +152,15 @@
   <script>
     let map, currentLocation, markers = [], favorites = [];
 
-    // Initialize the map
+    // Initialize Google Maps
     function initMap() {
       map = new google.maps.Map(document.getElementById("map"), {
-        center: { lat: 28.6139, lng: 77.209 }, // Default location
+        center: { lat: 28.6139, lng: 77.209 },
         zoom: 12,
       });
     }
 
-    // Get the user's current location
+    // Get user's current location
     function getCurrentLocation() {
       if (navigator.geolocation) {
         navigator.geolocation.getCurrentPosition(
@@ -181,43 +181,45 @@
       }
     }
 
-    // Fetch nearby places using Google Places API
+    // Fetch nearby places from the backend API
     async function fetchNearbyPlaces() {
-  const radius = parseInt(document.getElementById("radius-selector").value);
+      const radius = parseInt(document.getElementById("radius-selector").value);
+      const category = document.getElementById("place-category").value;
 
-  if (!currentLocation) {
-    alert("Please fetch your location first.");
-    return;
-  }
+      if (!currentLocation) {
+        alert("Please fetch your location first.");
+        return;
+      }
 
-  try {
-    const response = await fetch(
-      `http://localhost:5000/api/nearbyplaces?location=${currentLocation.lat},${currentLocation.lng}&radius=${radius}&type=${document.getElementById("place-category").value}`
-    );
-    const data = await response.json();
-
-    if (data.results && data.results.length > 0) {
-      clearMarkers();
-      updatePlacesList(data.results);
-
-      data.results.forEach((place) => {
-        addMarker(
-          { lat: place.geometry.location.lat, lng: place.geometry.location.lng },
-          place.name,
-          place.vicinity
+      try {
+        const response = await fetch(
+          `/api/nearbyplaces?location=${currentLocation.lat},${currentLocation.lng}&radius=${radius}&type=${category}`
         );
-      });
-    } else {
-      alert("No nearby places found.");
+        const data = await response.json();
+
+        if (response.ok) {
+          clearMarkers(); // Clear existing markers before adding new ones
+
+          data.results.forEach((place) => {
+            addMarker(
+              { lat: place.geometry.location.lat, lng: place.geometry.location.lng },
+              place.name,
+              place.vicinity
+            );
+          });
+
+          updatePlacesList(data.results); // Update the list of places
+        } else {
+          console.error("Error fetching nearby places:", data.error);
+          alert("An error occurred while fetching the places.");
+        }
+      } catch (error) {
+        console.error("Error fetching nearby places:", error);
+        alert("An error occurred while fetching the places.");
+      }
     }
-  } catch (error) {
-    console.error("Error fetching nearby places:", error.message);
-    alert("An error occurred while fetching the places.");
-  }
-}
 
-
-    // Add a marker to the map
+    // Add a marker on the map
     function addMarker(location, title, info) {
       const marker = new google.maps.Marker({
         position: location,
@@ -237,7 +239,7 @@
       });
     }
 
-    // Save a place to favorites
+    // Save place to favorites
     function saveToFavorites(name, info) {
       favorites.push({ name, info });
       updateFavoritesList();
@@ -254,14 +256,19 @@
       });
     }
 
+    // Clear all markers on the map
+    function clearMarkers() {
+      markers.forEach((marker) => marker.setMap(null));
+      markers = [];
+    }
+
     // Update the places list
     function updatePlacesList(places) {
       const placesList = document.getElementById("places-list");
       placesList.innerHTML = "";
-
       places.forEach((place) => {
         const listItem = document.createElement("li");
-        listItem.textContent = `${place.name} - ${place.vicinity || "No address available"}`;
+        listItem.textContent = `${place.name} - ${place.vicinity}`;
         placesList.appendChild(listItem);
       });
     }
